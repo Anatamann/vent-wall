@@ -18,12 +18,6 @@ import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Search, TrendingUp } from 'lucide-react'
 import type { SortOption, TimeFilter } from '../components/FeedFilters'
 
-const HEADER_HEIGHT = 64; // Corresponds to h-16 in Layout.tsx
-const FEED_FILTERS_HEIGHT = 100; // Approximate height of FeedFilters component
-const MOOD_TAG_FILTER_HEIGHT = 120; // Approximate height of MoodTagFilter component
-const SCROLL_THRESHOLD_START = 50; // Scroll Y position to start animations
-const SCROLL_THRESHOLD_END = SCROLL_THRESHOLD_START + FEED_FILTERS_HEIGHT; // Scroll Y position to end animations
-
 export default function Home() {
   const { isAuthenticated } = useAuth()
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -104,9 +98,9 @@ export default function Home() {
   const feedFiltersHeight = Math.max(0, 100 - (scrollY - 50));
 
   return (
-    <div className="space-y-6 h-[calc(100vh - 64px - 32px)] overflow-y-auto">
+    <div className="flex flex-col h-[calc(100vh - 64px - 32px)] overflow-y-auto space-y-6">
       {/* Quick Actions Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsAdvancedSearchOpen(true)}
@@ -158,7 +152,7 @@ export default function Home() {
       />
 
       {/* Feed Filters */}
-      <div style={{ opacity: feedFiltersOpacity, height: `${feedFiltersHeight}px`, overflow: 'hidden' }}>
+      <div style={{ opacity: feedFiltersOpacity, height: `${feedFiltersHeight}px`, overflow: 'hidden' }} className="flex-shrink-0">
         <FeedFilters
           sortBy={sortBy}
           timeFilter={timeFilter}
