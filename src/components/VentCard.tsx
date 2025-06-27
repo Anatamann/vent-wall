@@ -15,6 +15,15 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
   const [isVisible, setIsVisible] = useState(false)
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    cardRef.current.style.setProperty('--mouse-x', `${x}px`);
+    cardRef.current.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -43,9 +52,10 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
   return (
     <div 
       ref={cardRef}
-      className={`card vent-card-hover vent-card-enter overflow-hidden ${
+      className={`card vent-card-hover vent-card-enter overflow-hidden card-glow ${
         isVisible ? 'vent-card-visible' : ''
       }`}
+      onMouseMove={handleMouseMove}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">

@@ -1,7 +1,6 @@
 import React from 'react'
 import VentCard from './VentCard'
 import LoadingSpinner from './LoadingSpinner'
-import HorizontalScrollContainer from './HorizontalScrollContainer'
 import { MessageSquare } from 'lucide-react'
 import type { Vent } from '../lib/supabase'
 
@@ -16,13 +15,13 @@ interface VentsFeedProps {
   selectedTags?: string[]
 }
 
-export default function VentsFeed({ 
-  vents, 
-  loading, 
+export default function VentsFeed({
+  vents,
+  loading,
   loadingMore = false,
-  error, 
-  onReaction, 
-  onLoadMore, 
+  error,
+  onReaction,
+  onLoadMore,
   hasMore,
   selectedTags = []
 }: VentsFeedProps) {
@@ -40,8 +39,8 @@ export default function VentsFeed({
 
   if (loading && vents.length === 0) {
     return (
-      <div className="space-y-6">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
           <div key={i} className="card animate-pulse">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
@@ -72,9 +71,9 @@ export default function VentsFeed({
           {loading ? 'Loading vents...' : 'No vents found'}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {loading 
-            ? 'Please wait while we fetch the latest vents...' 
-            : selectedTags?.length > 0 
+          {loading
+            ? 'Please wait while we fetch the latest vents...'
+            : selectedTags?.length > 0
               ? 'No vents found with the selected mood tags. Try adjusting your filters.'
               : 'Be the first to share your thoughts and emotions with the community.'
           }
@@ -89,12 +88,23 @@ export default function VentsFeed({
   }
 
   return (
-    <HorizontalScrollContainer
-      vents={vents}
-      onReaction={onReaction}
-      hasMore={hasMore}
-      loading={loadingMore}
-      onLoadMore={onLoadMore || (() => {})}
-    />
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {vents.map((vent) => (
+          <VentCard key={vent.id} vent={vent} onReaction={onReaction} />
+        ))}
+      </div>
+      {hasMore && (
+        <div className="text-center mt-8">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="btn-secondary"
+          >
+            {loadingMore ? <LoadingSpinner /> : 'Load More'}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

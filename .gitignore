@@ -1,2 +1,5 @@
 .env
 *.sql
+node_modules
+GEMINI.md
+.gemini_docs
