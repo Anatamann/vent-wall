@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef, useLayoutEffect } from 'react'
 import { Search } from 'lucide-react'
 import type { MoodTag } from '../lib/supabase'
 
@@ -17,8 +17,53 @@ export default function MoodTagFilter({
   onSearchOpen,
   loading = false 
 }: MoodTagFilterProps) {
-  // Show first 8 tags, rest available through search
-  const visibleTags = tags.slice(0, 8)
+  const [visibleTagCount, setVisibleTagCount] = useState(tags.length)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (loading || !containerRef.current) return
+
+    const calculateVisibleTags = () => {
+      const containerWidth = containerRef.current?.offsetWidth ?? 0
+      const gap = 8 // Corresponds to gap-2 in Tailwind
+      let totalWidth = 0
+      let count = 0
+
+      const allTagsButton = containerRef.current?.children[0] as HTMLElement
+      if (allTagsButton) {
+        totalWidth += allTagsButton.offsetWidth + gap
+      }
+
+      for (let i = 0; i < tags.length; i++) {
+        const tagElement = document.createElement('span')
+        tagElement.innerText = tags[i].name
+        tagElement.className = 'inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium'
+        document.body.appendChild(tagElement)
+        const tagWidth = tagElement.offsetWidth + gap
+        document.body.removeChild(tagElement)
+
+        if (totalWidth + tagWidth < containerWidth) {
+          totalWidth += tagWidth
+          count++
+        } else {
+          break
+        }
+      }
+      setVisibleTagCount(count)
+    }
+
+    calculateVisibleTags()
+
+    const resizeObserver = new ResizeObserver(calculateVisibleTags)
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [tags, loading])
+
+  const visibleTags = tags.slice(0, visibleTagCount)
+  const hiddenTagCount = tags.length - visibleTagCount
 
   return (
     <div className="card mb-6">
@@ -46,7 +91,7 @@ export default function MoodTagFilter({
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div ref={containerRef} className="flex flex-wrap gap-2">
           {/* All Tags Button */}
           <button
             onClick={() => {
@@ -87,12 +132,12 @@ export default function MoodTagFilter({
           })}
 
           {/* More Tags Indicator */}
-          {tags.length > 8 && (
+          {hiddenTagCount > 0 && (
             <button
               onClick={onSearchOpen}
               className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              +{tags.length - 8} more
+              +{hiddenTagCount} more
             </button>
           )}
         </div>
