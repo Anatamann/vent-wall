@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import VentCard from './VentCard'
 import LoadingSpinner from './LoadingSpinner'
 import { MessageSquare } from 'lucide-react'
@@ -25,6 +25,37 @@ export default function VentsFeed({
   hasMore,
   selectedTags = []
 }: VentsFeedProps) {
+  const feedRef = useRef<HTMLDivElement>(null)
+  const observer = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    if (loading || !hasMore) return
+
+    if (observer.current) {
+      observer.current.disconnect()
+    }
+
+    observer.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && onLoadMore) {
+        onLoadMore()
+      }
+    }, {
+      root: feedRef.current,
+      rootMargin: '0px 0px 200px 0px',
+      threshold: 0.1,
+    })
+
+    if (feedRef.current) {
+      observer.current.observe(feedRef.current.lastElementChild!)
+    }
+
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect()
+      }
+    }
+  }, [loading, hasMore, onLoadMore, vents])
+
   if (error) {
     return (
       <div className="card text-center py-12">
@@ -37,10 +68,10 @@ export default function VentsFeed({
     )
   }
 
-  if (loading && vents.length === 0) {
+  if (vents.length === 0 && loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
+      <div className="grid grid-cols-1 gap-6">
+        {[...Array(3)].map((_, i) => (
           <div key={i} className="card animate-pulse">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
@@ -63,46 +94,36 @@ export default function VentsFeed({
     )
   }
 
-  if (vents.length === 0) {
+  if (vents.length === 0 && !loading) {
     return (
       <div className="card text-center py-12">
         <MessageSquare className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          {loading ? 'Loading vents...' : 'No vents found'}
+          No vents found
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {loading
-            ? 'Please wait while we fetch the latest vents...'
-            : selectedTags?.length > 0
-              ? 'No vents found with the selected mood tags. Try adjusting your filters.'
-              : 'Be the first to share your thoughts and emotions with the community.'
+          {selectedTags?.length > 0
+            ? 'No vents found with the selected mood tags. Try adjusting your filters.'
+            : 'Be the first to share your thoughts and emotions with the community.'
           }
         </p>
-        {!loading && (
-          <button className="btn-primary">
-            Share Your First Vent
-          </button>
-        )}
+        <button className="btn-primary">
+          Share Your First Vent
+        </button>
       </div>
     )
   }
 
   return (
-    <div>
+    <div ref={feedRef} className="h-[calc(100vh-250px)] overflow-y-auto pr-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vents.map((vent) => (
           <VentCard key={vent.id} vent={vent} onReaction={onReaction} />
         ))}
       </div>
-      {hasMore && (
-        <div className="text-center mt-8">
-          <button
-            onClick={onLoadMore}
-            disabled={loadingMore}
-            className="btn-secondary"
-          >
-            {loadingMore ? <LoadingSpinner /> : 'Load More'}
-          </button>
+      {loadingMore && (
+        <div className="text-center py-4">
+          <LoadingSpinner />
         </div>
       )}
     </div>
