@@ -56,6 +56,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
         isVisible ? 'vent-card-visible' : ''
       }`}
       onMouseMove={handleMouseMove}
+      style={{ '--glow-color': vent.mood_tags && vent.mood_tags.length > 0 ? vent.mood_tags[0].color : '#ffffff' } as React.CSSProperties}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">

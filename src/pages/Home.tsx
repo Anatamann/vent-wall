@@ -9,7 +9,7 @@ import AdvancedSearch from '../components/AdvancedSearch'
 import PerformanceOptimizer from '../components/PerformanceOptimizer'
 import FloatingPostButton from '../components/FloatingPostButton'
 import PostModal from '../components/PostModal'
-import PostLimitBanner from '../components/PostLimitBanner'
+
 import { useRealtimeVents } from '../hooks/useRealtimeVents'
 import { useMoodTags } from '../hooks/useMoodTags'
 import { usePostLimits } from '../hooks/usePostLimits'
@@ -133,8 +133,7 @@ export default function Home() {
 
       {/* Trending Dashboard */}
       {showTrending && <TrendingDashboard />}
-      {/* Post Limit Banner */}
-      {isAuthenticated && <PostLimitBanner />}
+      
 
       {/* Mood Tags Filter */}
       <MoodTagFilter

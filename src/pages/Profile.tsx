@@ -7,6 +7,7 @@ import UserStats from '../components/UserStats'
 import UserVentsList from '../components/UserVentsList'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { ArrowLeft } from 'lucide-react'
+import PostLimitBanner from '../components/PostLimitBanner'
 
 export default function Profile() {
   const { isAuthenticated, profileExists, loading: authLoading } = useAuth()
@@ -167,6 +168,9 @@ export default function Profile() {
         </button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Your Profile</h1>
       </div>
+
+      {/* Post Limit Banner */}
+      <PostLimitBanner />
 
       {/* Username Editor */}
       <UsernameEditor
