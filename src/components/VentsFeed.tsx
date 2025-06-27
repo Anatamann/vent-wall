@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, forwardRef } from 'react'
 import VentCard from './VentCard'
 import LoadingSpinner from './LoadingSpinner'
 import { MessageSquare } from 'lucide-react'
@@ -13,10 +13,9 @@ interface VentsFeedProps {
   onLoadMore?: () => void
   hasMore: boolean
   selectedTags?: string[];
-  style?: React.CSSProperties; // Add style prop
 }
 
-export default function VentsFeed({
+const VentsFeed = forwardRef<HTMLDivElement, VentsFeedProps>(({ 
   vents,
   loading,
   loadingMore = false,
@@ -25,30 +24,29 @@ export default function VentsFeed({
   onLoadMore,
   hasMore,
   selectedTags = [],
-  style
-}: VentsFeedProps) {
-  const feedRef = useRef<HTMLDivElement>(null)
+}, ref) => {
+  const lastVentRef = useRef<HTMLDivElement>(null)
   const observer = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
-    if (loading || !hasMore) return
+    if (loading || !hasMore || !onLoadMore) return
 
     if (observer.current) {
       observer.current.disconnect()
     }
 
     observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && onLoadMore) {
+      if (entries[0].isIntersecting) {
         onLoadMore()
       }
     }, {
-      root: feedRef.current,
-      rootMargin: '0px 0px 200px 0px',
+      root: null, // Use the viewport as the root
+      rootMargin: '0px 0px 200px 0px', // Trigger when 200px from bottom
       threshold: 0.1,
     })
 
-    if (feedRef.current) {
-      observer.current.observe(feedRef.current.lastElementChild!)
+    if (lastVentRef.current) {
+      observer.current.observe(lastVentRef.current)
     }
 
     return () => {
@@ -72,8 +70,8 @@ export default function VentsFeed({
 
   if (vents.length === 0 && loading) {
     return (
-      <div className="grid grid-cols-1 gap-6">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
           <div key={i} className="card animate-pulse">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
@@ -117,10 +115,15 @@ export default function VentsFeed({
   }
 
   return (
-    <div ref={feedRef} className="h-[calc(100vh-250px)] overflow-y-auto pr-4" style={style}>
+    <div ref={ref}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {vents.map((vent) => (
-          <VentCard key={vent.id} vent={vent} onReaction={onReaction} />
+        {vents.map((vent, index) => (
+          <VentCard
+            key={vent.id}
+            vent={vent}
+            onReaction={onReaction}
+            ref={index === vents.length - 1 ? lastVentRef : null}
+          />
         ))}
       </div>
       {loadingMore && (
@@ -130,4 +133,6 @@ export default function VentsFeed({
       )}
     </div>
   )
-}
+})
+
+export default VentsFeed

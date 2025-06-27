@@ -8,7 +8,7 @@ interface MoodTagFilterProps {
   onTagSelect: (tagId: string) => void
   onSearchOpen: () => void
   loading?: boolean;
-  style?: React.CSSProperties; // Add style prop
+  
 }
 
 export default function MoodTagFilter({
@@ -17,7 +17,6 @@ export default function MoodTagFilter({
   onTagSelect,
   onSearchOpen,
   loading = false,
-  style
 }: MoodTagFilterProps) {
   const [visibleTagCount, setVisibleTagCount] = useState(tags.length)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -68,7 +67,7 @@ export default function MoodTagFilter({
   const hiddenTagCount = tags.length - visibleTagCount
 
   return (
-    <div className="card mb-6" style={style}>
+    <div className="card mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Filter by Mood

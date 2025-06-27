@@ -100,15 +100,11 @@ export default function Home() {
   }
 
   // Calculate dynamic styles for FeedFilters
-  const feedFiltersOpacity = Math.max(0, 1 - (scrollY - SCROLL_THRESHOLD_START) / (SCROLL_THRESHOLD_END - SCROLL_THRESHOLD_START));
-  const feedFiltersHeight = Math.max(0, FEED_FILTERS_HEIGHT - (scrollY - SCROLL_THRESHOLD_START));
-
-  // Calculate dynamic heights for MoodTagFilter and VentsFeed
-  const moodTagFilterDynamicHeight = Math.min(MOOD_TAG_FILTER_HEIGHT, MOOD_TAG_FILTER_HEIGHT + (scrollY - SCROLL_THRESHOLD_START));
-  const ventsFeedDynamicHeight = `calc(100vh - ${HEADER_HEIGHT}px - ${moodTagFilterDynamicHeight}px - ${32}px)`; // 32px for py-8 on main
+  const feedFiltersOpacity = Math.max(0, 1 - (scrollY - 50) / (100));
+  const feedFiltersHeight = Math.max(0, 100 - (scrollY - 50));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-[calc(100vh - 64px - 32px)] overflow-y-auto">
       {/* Quick Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
@@ -159,7 +155,6 @@ export default function Home() {
         onTagSelect={handleTagSelect}
         onSearchOpen={() => setIsSearchOpen(true)}
         loading={tagsLoading}
-        style={{ height: `${moodTagFilterDynamicHeight}px`, overflow: 'hidden' }}
       />
 
       {/* Feed Filters */}
@@ -183,7 +178,6 @@ export default function Home() {
         onLoadMore={loadMore}
         onReaction={addReaction}
         selectedTags={selectedTags}
-        style={{ height: ventsFeedDynamicHeight }}
       />
 
       {/* Tag Search Modal */}
