@@ -12,7 +12,8 @@ interface VentsFeedProps {
   onReaction?: (ventId: string, emoji: string) => void
   onLoadMore?: () => void
   hasMore: boolean
-  selectedTags?: string[]
+  selectedTags?: string[];
+  style?: React.CSSProperties; // Add style prop
 }
 
 export default function VentsFeed({
@@ -23,7 +24,8 @@ export default function VentsFeed({
   onReaction,
   onLoadMore,
   hasMore,
-  selectedTags = []
+  selectedTags = [],
+  style
 }: VentsFeedProps) {
   const feedRef = useRef<HTMLDivElement>(null)
   const observer = useRef<IntersectionObserver | null>(null)
@@ -115,7 +117,7 @@ export default function VentsFeed({
   }
 
   return (
-    <div ref={feedRef} className="h-[calc(100vh-250px)] overflow-y-auto pr-4">
+    <div ref={feedRef} className="h-[calc(100vh-250px)] overflow-y-auto pr-4" style={style}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vents.map((vent) => (
           <VentCard key={vent.id} vent={vent} onReaction={onReaction} />

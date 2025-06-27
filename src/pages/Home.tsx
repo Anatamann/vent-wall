@@ -1,5 +1,4 @@
-import React from 'react'
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import MoodTagFilter from '../components/MoodTagFilter'
 import TagSearch from '../components/TagSearch'
 import VentsFeed from '../components/VentsFeed'
@@ -15,8 +14,15 @@ import { useMoodTags } from '../hooks/useMoodTags'
 import { usePostLimits } from '../hooks/usePostLimits'
 import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor'
 import { useAuth } from '../hooks/useAuth'
+import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Search, TrendingUp } from 'lucide-react'
 import type { SortOption, TimeFilter } from '../components/FeedFilters'
+
+const HEADER_HEIGHT = 64; // Corresponds to h-16 in Layout.tsx
+const FEED_FILTERS_HEIGHT = 100; // Approximate height of FeedFilters component
+const MOOD_TAG_FILTER_HEIGHT = 120; // Approximate height of MoodTagFilter component
+const SCROLL_THRESHOLD_START = 50; // Scroll Y position to start animations
+const SCROLL_THRESHOLD_END = SCROLL_THRESHOLD_START + FEED_FILTERS_HEIGHT; // Scroll Y position to end animations
 
 export default function Home() {
   const { isAuthenticated } = useAuth()
@@ -29,6 +35,8 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all')
   
+  const scrollY = useScrollPosition()
+
   const { tags, loading: tagsLoading } = useMoodTags()
   const { 
     vents, 
@@ -90,6 +98,15 @@ export default function Home() {
     console.log('Advanced search filters:', filters)
     // This would integrate with the useRealtimeVents hook
   }
+
+  // Calculate dynamic styles for FeedFilters
+  const feedFiltersOpacity = Math.max(0, 1 - (scrollY - SCROLL_THRESHOLD_START) / (SCROLL_THRESHOLD_END - SCROLL_THRESHOLD_START));
+  const feedFiltersHeight = Math.max(0, FEED_FILTERS_HEIGHT - (scrollY - SCROLL_THRESHOLD_START));
+
+  // Calculate dynamic heights for MoodTagFilter and VentsFeed
+  const moodTagFilterDynamicHeight = Math.min(MOOD_TAG_FILTER_HEIGHT, MOOD_TAG_FILTER_HEIGHT + (scrollY - SCROLL_THRESHOLD_START));
+  const ventsFeedDynamicHeight = `calc(100vh - ${HEADER_HEIGHT}px - ${moodTagFilterDynamicHeight}px - ${32}px)`; // 32px for py-8 on main
+
   return (
     <div className="space-y-6">
       {/* Quick Actions Bar */}
@@ -142,16 +159,19 @@ export default function Home() {
         onTagSelect={handleTagSelect}
         onSearchOpen={() => setIsSearchOpen(true)}
         loading={tagsLoading}
+        style={{ height: `${moodTagFilterDynamicHeight}px`, overflow: 'hidden' }}
       />
 
       {/* Feed Filters */}
-      <FeedFilters
-        sortBy={sortBy}
-        timeFilter={timeFilter}
-        onSortChange={setSortBy}
-        onTimeFilterChange={setTimeFilter}
-        totalCount={filteredVentsCount}
-      />
+      <div style={{ opacity: feedFiltersOpacity, height: `${feedFiltersHeight}px`, overflow: 'hidden' }}>
+        <FeedFilters
+          sortBy={sortBy}
+          timeFilter={timeFilter}
+          onSortChange={setSortBy}
+          onTimeFilterChange={setTimeFilter}
+          totalCount={filteredVentsCount}
+        />
+      </div>
 
       {/* Vents Feed */}
       <VentsFeed
@@ -163,6 +183,7 @@ export default function Home() {
         onLoadMore={loadMore}
         onReaction={addReaction}
         selectedTags={selectedTags}
+        style={{ height: ventsFeedDynamicHeight }}
       />
 
       {/* Tag Search Modal */}

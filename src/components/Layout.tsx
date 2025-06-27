@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { MessageSquare, User, LogOut, LogIn } from 'lucide-react'
+import { useScrollPosition } from '../hooks/useScrollPosition'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -10,6 +11,10 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, signOut, isAuthenticated, profileExists, loading } = useAuth()
   const location = useLocation()
+  const scrollY = useScrollPosition()
+
+  const headerHeight = 64; // h-16 is 64px
+  const headerTranslateY = Math.min(0, -scrollY);
 
   const handleProfileClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
@@ -29,7 +34,10 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
+      <header 
+        className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-transform duration-300 z-10"
+        style={{ transform: `translateY(${headerTranslateY}px)` }}
+      >
         <div className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -77,7 +85,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: `${headerHeight + 32}px` }}>
         {children}
       </main>
 
