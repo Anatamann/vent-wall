@@ -58,12 +58,12 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
   return (
     <div className="card">
       <div className="flex items-center space-x-4">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center">
-          <User className="w-8 h-8 text-white" />
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center">
+          <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
         </div>
         
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+          <h1 className="text-2xl font-bold text-gray-700 dark:text-gray-100 mb-1">
             Profile Settings
           </h1>
           
@@ -75,7 +75,7 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className={`px-3 py-1 border rounded-md text-lg font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 transition-colors ${
+                  className={`flex-1 min-w-0 px-3 py-1 border rounded-md text-base sm:text-lg font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 transition-colors ${
                     isValid 
                       ? 'border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500' 
                       : 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
@@ -94,7 +94,7 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
                     {isUpdating ? (
                       <LoadingSpinner size="sm" />
                     ) : (
-                      <Check className="w-5 h-5" />
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                   
@@ -104,7 +104,7 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
                     className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                     title="Cancel"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
@@ -134,7 +134,7 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
                 className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 title="Edit username"
               >
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           )}

@@ -1,8 +1,9 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { MessageSquare, User, LogOut, LogIn } from 'lucide-react'
+import { MessageSquare, User, LogOut, LogIn, Sun, Moon } from 'lucide-react'
 import { useScrollPosition } from '../hooks/useScrollPosition'
+import { useTheme } from '../hooks/useTheme'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -12,6 +13,7 @@ export default function Layout({ children }: LayoutProps) {
   const { user, signOut, isAuthenticated, profileExists, loading } = useAuth()
   const location = useLocation()
   const scrollY = useScrollPosition()
+  const { theme, toggleTheme } = useTheme()
 
   const headerHeight = 64; // h-16 is 64px
   const headerTranslateY = Math.min(0, -scrollY);
@@ -38,16 +40,23 @@ export default function Layout({ children }: LayoutProps) {
         className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-transform duration-300 z-10"
         style={{ transform: `translateY(${headerTranslateY}px)` }}
       >
-        <div className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-[90vw] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <MessageSquare className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Vent Wall</span>
+              <MessageSquare className="w-8 h-8 text-primary-500 dark:text-primary-300" />
+              <span className="text-lg sm:text-xl font-bold text-gray-700 dark:text-gray-100">Vent Wall</span>
             </Link>
 
             {/* Navigation */}
             <nav className="flex items-center space-x-4">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
               {isAuthenticated ? (
                 <>
                   <Link
@@ -85,14 +94,14 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: `${headerHeight + 32}px` }}>
+      <main className="w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: `${headerHeight + 32}px` }}>
         {children}
       </main>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto transition-colors">
-        <div className="w-[80vw] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-center text-sm text-gray-500 dark:text-gray-400">
             <p>&copy; 2024 Vent Wall. A safe space for emotional expression.</p>
           </div>
         </div>
