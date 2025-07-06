@@ -90,7 +90,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
           {vent.mood_tags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors"
               style={{
                 backgroundColor: `${tag.color}20`,
                 color: tag.color,

@@ -140,7 +140,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
               <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
+                  <div className="text-sm md:text-base">
                     <p className="text-red-800 dark:text-red-200 font-medium">
                       Delete this vent?
                     </p>

@@ -32,7 +32,7 @@ export default function PostLimitBanner() {
             </div>
           )}
           {!limitReached && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-2">
               You can post {maxPosts - postsToday} more vents today.
             </p>
           )}

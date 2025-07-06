@@ -76,7 +76,7 @@ export default function ReactionButton({
             title={`${data.count} reaction${data.count !== 1 ? 's' : ''}`}
           >
             <span>{emoji}</span>
-            <span className="text-xs font-medium">{data.count}</span>
+            <span className="text-xs sm:text-sm font-medium">{data.count}</span>
           </button>
         ))}
       </div>

@@ -119,7 +119,7 @@ export default function UsernameEditor({ currentUsername, onUpdateUsername }: Us
                 {error && (
                   <p className="text-red-600 dark:text-red-400">{error}</p>
                 )}
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
                   Press Enter to save, Escape to cancel
                 </p>
               </div>

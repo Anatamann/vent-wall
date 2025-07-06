@@ -101,7 +101,7 @@ const VentsFeed = forwardRef<HTMLDivElement, VentsFeedProps>(({
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
           No vents found
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-6">
           {selectedTags?.length > 0
             ? 'No vents found with the selected mood tags. Try adjusting your filters.'
             : 'Be the first to share your thoughts and emotions with the community.'

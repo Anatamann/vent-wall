@@ -143,7 +143,7 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search mood tags..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm sm:text-base"
               />
               
               <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-2 scrollbar-hide">
@@ -156,7 +156,7 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
                         key={tag.id}
                         onClick={() => handleTagToggle(tag.id)}
                         disabled={isSelected}
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm md:text-base font-medium transition-all duration-200 ${
                           isSelected
                             ? 'opacity-50 cursor-not-allowed'
                             : 'hover:scale-105'

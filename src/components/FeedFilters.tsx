@@ -64,7 +64,7 @@ export default function FeedFilters({
 
           {/* Sort Options */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Sort:</span>
+            <span className="text-sm md:text-base text-gray-500 dark:text-gray-400">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value as SortOption)}

@@ -43,7 +43,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
               <MessageSquare className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Vent Wall</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Vent Wall</span>
             </Link>
 
             {/* Navigation */}
@@ -73,7 +73,7 @@ export default function Layout({ children }: LayoutProps) {
               ) : (
                 <Link
                   to="/auth"
-                  className="flex items-center space-x-1 px-4 py-2 rounded-md text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 transition-colors"
+                  className="flex items-center space-x-1 px-4 py-2 rounded-md text-sm md:text-base font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Sign In</span>

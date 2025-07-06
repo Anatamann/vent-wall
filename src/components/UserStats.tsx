@@ -74,7 +74,7 @@ export default function UserStats({ stats }: UserStatsProps) {
 
       {/* Timeline Info */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-sm md:text-base text-gray-600 dark:text-gray-400">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
             <span>Joined {joinedAgo}</span>

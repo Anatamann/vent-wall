@@ -135,7 +135,7 @@ export default function TrendingDashboard() {
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <span className="text-sm text-gray-600 dark:text-gray-400 w-8">
+                <span className="text-sm md:text-base text-gray-600 dark:text-gray-400 w-8">
                   {hour.count}
                 </span>
               </div>

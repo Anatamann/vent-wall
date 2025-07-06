@@ -136,7 +136,7 @@ export default function MoodTagFilter({
           {hiddenTagCount > 0 && (
             <button
               onClick={onSearchOpen}
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-sm md:text-base font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               +{hiddenTagCount} more
             </button>
@@ -147,7 +147,7 @@ export default function MoodTagFilter({
       {/* Selected Tags Summary */}
       {selectedTags.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             Filtering by {selectedTags.length} mood{selectedTags.length !== 1 ? 's' : ''}
           </p>
         </div>
