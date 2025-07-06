@@ -98,7 +98,7 @@ export default function Home() {
   const feedFiltersHeight = Math.max(0, 100 - (scrollY - 50));
 
   return (
-    <div className="flex flex-col h-[calc(100vh - 64px - 32px)] overflow-y-auto space-y-6">
+    <div className="flex flex-col h-[calc(100vh - 64px - 32px)] overflow-y-auto space-y-6 scrollbar-hide">
       {/* Quick Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
         <div className="flex items-center space-x-4">

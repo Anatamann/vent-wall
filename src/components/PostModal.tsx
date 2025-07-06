@@ -146,7 +146,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -238,7 +238,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
             </div>
 
             {/* Available Tags */}
-            <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3">
+            <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 scrollbar-hide">
               <div className="flex flex-wrap gap-2">
                 {filteredTags.map((tag) => {
                   const isSelected = selectedTags.includes(tag.id)

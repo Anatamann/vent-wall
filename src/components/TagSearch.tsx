@@ -79,7 +79,7 @@ export default function TagSearch({
         </div>
 
         {/* Tags List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
           {filteredTags.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400">
