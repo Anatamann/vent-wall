@@ -2,21 +2,17 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import MoodTagFilter from '../components/MoodTagFilter'
 import TagSearch from '../components/TagSearch'
 import VentsFeed from '../components/VentsFeed'
-import FeedFilters from '../components/FeedFilters'
 import TrendingDashboard from '../components/TrendingDashboard'
 import AdvancedSearch from '../components/AdvancedSearch'
-import PerformanceOptimizer from '../components/PerformanceOptimizer'
 import FloatingPostButton from '../components/FloatingPostButton'
 import PostModal from '../components/PostModal'
 
 import { useRealtimeVents } from '../hooks/useRealtimeVents'
 import { useMoodTags } from '../hooks/useMoodTags'
 import { usePostLimits } from '../hooks/usePostLimits'
-import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor'
 import { useAuth } from '../hooks/useAuth'
 import { useScrollPosition } from '../hooks/useScrollPosition'
 import { Search, TrendingUp } from 'lucide-react'
-import type { SortOption, TimeFilter } from '../components/FeedFilters'
 
 export default function Home() {
   const { isAuthenticated } = useAuth()
@@ -25,9 +21,6 @@ export default function Home() {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
-  const [showPerformance, setShowPerformance] = useState(false)
-  const [sortBy, setSortBy] = useState<SortOption>('newest')
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all')
   
   const scrollY = useScrollPosition()
 
@@ -43,11 +36,10 @@ export default function Home() {
     refresh 
   } = useRealtimeVents({
     selectedTags,
-    sortBy,
-    timeFilter
+    sortBy: 'newest',
+    timeFilter: 'all'
   })
   const { canPost } = usePostLimits()
-  const { metrics, optimize } = usePerformanceMonitor()
 
   // Memoize filtered vents count for performance
   const filteredVentsCount = useMemo(() => vents.length, [vents.length])
@@ -81,21 +73,15 @@ export default function Home() {
         loading: ventsLoading,
         error,
         selectedTags,
-        sortBy,
-        timeFilter
       })
     }
-  }, [vents.length, ventsLoading, error, selectedTags, sortBy, timeFilter])
+  }, [vents.length, ventsLoading, error, selectedTags])
 
   const handleAdvancedSearch = (filters: any) => {
     // Apply advanced search filters
     console.log('Advanced search filters:', filters)
     // This would integrate with the useRealtimeVents hook
   }
-
-  // Calculate dynamic styles for FeedFilters
-  const feedFiltersOpacity = Math.max(0, 1 - (scrollY - 50) / (100));
-  const feedFiltersHeight = Math.max(0, 100 - (scrollY - 50));
 
   return (
     <div className="flex flex-col h-[calc(100vh - 64px - 32px)] overflow-y-auto space-y-6 scrollbar-hide">
@@ -123,20 +109,7 @@ export default function Home() {
           </button>
         </div>
         
-        {process.env.NODE_ENV === 'development' && (
-          <button
-            onClick={() => setShowPerformance(!showPerformance)}
-            className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Performance
-          </button>
-        )}
       </div>
-
-      {/* Performance Monitor (Development Only) */}
-      {process.env.NODE_ENV === 'development' && showPerformance && (
-        <PerformanceOptimizer metrics={metrics} onOptimize={optimize} />
-      )}
 
       {/* Trending Dashboard */}
       {showTrending && <TrendingDashboard />}
@@ -150,17 +123,6 @@ export default function Home() {
         onSearchOpen={() => setIsSearchOpen(true)}
         loading={tagsLoading}
       />
-
-      {/* Feed Filters */}
-      <div style={{ opacity: feedFiltersOpacity, height: `${feedFiltersHeight}px`, overflow: 'hidden' }} className="flex-shrink-0">
-        <FeedFilters
-          sortBy={sortBy}
-          timeFilter={timeFilter}
-          onSortChange={setSortBy}
-          onTimeFilterChange={setTimeFilter}
-          totalCount={filteredVentsCount}
-        />
-      </div>
 
       {/* Vents Feed */}
       <VentsFeed
