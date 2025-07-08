@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react'
+import React from 'react'
 import { Search } from 'lucide-react'
 import type { MoodTag } from '../lib/supabase'
 
@@ -8,7 +8,6 @@ interface MoodTagFilterProps {
   onTagSelect: (tagId: string) => void
   onSearchOpen: () => void
   loading?: boolean;
-  
 }
 
 export default function MoodTagFilter({
@@ -18,54 +17,6 @@ export default function MoodTagFilter({
   onSearchOpen,
   loading = false,
 }: MoodTagFilterProps) {
-  const [visibleTagCount, setVisibleTagCount] = useState(tags.length)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (loading || !containerRef.current) return
-
-    const calculateVisibleTags = () => {
-      const containerWidth = containerRef.current?.offsetWidth ?? 0
-      const gap = 8 // Corresponds to gap-2 in Tailwind
-      let totalWidth = 0
-      let count = 0
-
-      const allTagsButton = containerRef.current?.children[0] as HTMLElement
-      if (allTagsButton) {
-        totalWidth += allTagsButton.offsetWidth + gap
-      }
-
-      for (let i = 0; i < tags.length; i++) {
-        const tagElement = document.createElement('span')
-        tagElement.innerText = tags[i].name
-        tagElement.className = 'inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium'
-        document.body.appendChild(tagElement)
-        const tagWidth = tagElement.offsetWidth + gap
-        document.body.removeChild(tagElement)
-
-        if (totalWidth + tagWidth < containerWidth) {
-          totalWidth += tagWidth
-          count++
-        } else {
-          break
-        }
-      }
-      setVisibleTagCount(count)
-    }
-
-    calculateVisibleTags()
-
-    const resizeObserver = new ResizeObserver(calculateVisibleTags)
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current)
-    }
-
-    return () => resizeObserver.disconnect()
-  }, [tags, loading])
-
-  const visibleTags = tags.slice(0, visibleTagCount)
-  const hiddenTagCount = tags.length - visibleTagCount
-
   return (
     <div className="card mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -86,61 +37,55 @@ export default function MoodTagFilter({
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"
-              style={{ width: `${60 + Math.random() * 40}px` }}
+              className="h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"
+              style={{ width: `${80 + Math.random() * 40}px` }}
             />
           ))}
         </div>
       ) : (
-        <div ref={containerRef} className="flex flex-wrap gap-2">
-          {/* All Tags Button */}
-          <button
-            onClick={() => {
-              // Clear all selected tags when "All Moods" is clicked
-              selectedTags.forEach(tagId => onTagSelect(tagId))
-            }}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              selectedTags.length === 0
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-2 border-primary-300 dark:border-primary-600'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            All Moods
-          </button>
-
-          {/* Individual Tag Buttons */}
-          {visibleTags.map((tag) => {
-            const isSelected = selectedTags.includes(tag.id)
-            return (
-              <button
-                key={tag.id}
-                onClick={() => onTagSelect(tag.id)}
-                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                  isSelected
-                    ? 'border-2 shadow-sm transform scale-105'
-                    : 'border-2 border-transparent hover:scale-105'
-                }`}
-                style={{
-                  backgroundColor: isSelected ? `${tag.color}20` : `${tag.color}10`,
-                  color: tag.color,
-                  borderColor: isSelected ? `${tag.color}60` : 'transparent'
-                }}
-              >
-                <span className="mr-1.5">{tag.emoji}</span>
-                {tag.name}
-              </button>
-            )
-          })}
-
-          {/* More Tags Indicator */}
-          {hiddenTagCount > 0 && (
+        <div className="relative">
+          <div className="flex space-x-3 overflow-x-auto pb-4 scrollbar-hide">
+            {/* All Tags Button */}
             <button
-              onClick={onSearchOpen}
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-sm md:text-base font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => {
+                // Clear all selected tags when "All Moods" is clicked
+                selectedTags.forEach(tagId => onTagSelect(tagId))
+              }}
+              className={`flex-shrink-0 inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                selectedTags.length === 0
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-2 border-primary-300 dark:border-primary-600'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
             >
-              +{hiddenTagCount} more
+              All Moods
             </button>
-          )}
+
+            {/* Individual Tag Buttons */}
+            {tags.map((tag) => {
+              const isSelected = selectedTags.includes(tag.id)
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => onTagSelect(tag.id)}
+                  className={`flex-shrink-0 inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    isSelected
+                      ? 'border-2 shadow-sm transform scale-105'
+                      : 'border-2 border-transparent hover:scale-105'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? `${tag.color}20` : `${tag.color}10`,
+                    color: tag.color,
+                    borderColor: isSelected ? `${tag.color}60` : 'transparent'
+                  }}
+                >
+                  <span className="mr-1.5">{tag.emoji}</span>
+                  {tag.name}
+                </button>
+              )
+            })}
+          </div>
+          {/* Fade effect */}
+          <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white dark:from-gray-800 pointer-events-none" />
         </div>
       )}
 

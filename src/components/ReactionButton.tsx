@@ -72,15 +72,15 @@ export default function ReactionButton({
             key={emoji}
             onClick={() => handleReactionClick(emoji)}
             disabled={disabled}
-            className={`inline-flex items-center space-x-1 px-2 py-1.5 rounded-full text-sm transition-all duration-200 ${
+            className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-base transition-all duration-200 ${
               data.hasUserReacted
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-300 dark:border-primary-600'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-transparent'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
             title={`${data.count} reaction${data.count !== 1 ? 's' : ''}`}
           >
-            <span>{emoji}</span>
-            <span className="text-xs sm:text-sm font-medium">{data.count}</span>
+            <span className="text-lg">{emoji}</span>
+            <span className="font-medium">{data.count}</span>
           </button>
         ))}
       </div>
@@ -89,10 +89,10 @@ export default function ReactionButton({
       {!disabled && (
         <button
           onClick={handleAddReaction}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 flex-shrink-0 ml-2"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 flex-shrink-0 ml-2"
           title="Add reaction"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         </button>
       )}
 
