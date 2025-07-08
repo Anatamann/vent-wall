@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import ReactionButton from './ReactionButton'
 import { useAuth } from '../hooks/useAuth'
@@ -9,9 +9,13 @@ interface VentCardProps {
   onReaction?: (ventId: string, emoji: string) => void
 }
 
-export default function VentCard({ vent, onReaction }: VentCardProps) {
+const VentCard = forwardRef<HTMLDivElement, VentCardProps>(({ vent, onReaction }, ref) => {
   const { user } = useAuth()
   const cardRef = useRef<HTMLDivElement>(null)
+  
+  // Expose the internal ref to the parent component
+  useImperativeHandle(ref, () => cardRef.current!, []);
+
   const [isVisible, setIsVisible] = useState(false)
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
 
@@ -25,6 +29,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
   };
 
   useEffect(() => {
+    const currentCardRef = cardRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -38,13 +43,13 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
       }
     )
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current)
+    if (currentCardRef) {
+      observer.observe(currentCardRef)
     }
 
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current)
+      if (currentCardRef) {
+        observer.unobserve(currentCardRef)
       }
     }
   }, [])
@@ -115,4 +120,6 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
       </div>
     </div>
   )
-}
+})
+
+export default VentCard
