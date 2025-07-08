@@ -52,7 +52,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
   return (
     <div 
       ref={cardRef}
-      className={`card vent-card-hover vent-card-enter overflow-hidden card-glow ${
+      className={`card vent-card-hover vent-card-enter card-glow ${
         isVisible ? 'vent-card-visible' : ''
       }`}
       onMouseMove={handleMouseMove}
@@ -105,7 +105,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-start pt-3 border-t border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="flex items-center justify-start pt-3 border-t border-gray-100 dark:border-gray-700">
         <ReactionButton
           reactions={vent.reactions || []}
           onReaction={(emoji) => onReaction?.(vent.id, emoji)}

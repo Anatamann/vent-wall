@@ -48,10 +48,14 @@ export default function ReactionButton({
   }
 
   const handleEmojiSelect = (emoji: string) => {
-    onReaction(emoji)
+    // Only add reaction if user hasn't already reacted with this emoji
+    if (!reactionGroups[emoji]?.hasUserReacted) {
+      onReaction(emoji)
+    }
+    setShowPicker(false)
   }
 
-  const handleReactionClick = (emoji: string, hasUserReacted: boolean) => {
+  const handleReactionClick = (emoji: string) => {
     if (disabled) return
     
     // If user has already reacted with this emoji, remove it
@@ -60,13 +64,13 @@ export default function ReactionButton({
   }
 
   return (
-    <div className="flex items-center space-x-2 overflow-hidden">
+    <div className="flex items-center space-x-2">
       {/* Existing Reactions */}
       <div className="flex items-center gap-2 flex-wrap">
         {Object.entries(reactionGroups).map(([emoji, data]) => (
           <button
             key={emoji}
-            onClick={() => handleReactionClick(emoji, data.hasUserReacted)}
+            onClick={() => handleReactionClick(emoji)}
             disabled={disabled}
             className={`inline-flex items-center space-x-1 px-2 py-1.5 rounded-full text-sm transition-all duration-200 ${
               data.hasUserReacted

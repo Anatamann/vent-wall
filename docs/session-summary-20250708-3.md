@@ -1,0 +1,3 @@
+In this session, I resolved a bug where the `ReactionButton` component was not clickable. The root cause was the `.card-glow::before` pseudo-element, which was creating an overlay that blocked mouse events. 
+
+To fix this, I added the `pointer-events-none` style to the `.card-glow::before` class in `src/index.css`. This allows the glow effect to remain visible while allowing clicks to pass through to the underlying buttons.
