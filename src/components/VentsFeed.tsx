@@ -1,9 +1,7 @@
-import React from 'react'
 import VentCard from './VentCard'
-import LoadingSpinner from './LoadingSpinner'
-import HorizontalScrollContainer from './HorizontalScrollContainer'
+import InfiniteScroll from './InfiniteScroll'
 import { MessageSquare } from 'lucide-react'
-import type { Vent } from '../lib/supabase'
+import type { Vent } from '../lib/types'
 
 interface VentsFeedProps {
   vents: Vent[]
@@ -14,17 +12,44 @@ interface VentsFeedProps {
   onLoadMore?: () => void
   hasMore: boolean
   selectedTags?: string[]
+  currentUserId?: string
 }
 
-export default function VentsFeed({ 
-  vents, 
-  loading, 
+const GRID_CLASS =
+  'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full'
+
+function VentCardSkeleton() {
+  return (
+    <div className="card animate-pulse h-full">
+      <div className="flex items-center space-x-3 mb-4">
+        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24" />
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-16" />
+        </div>
+      </div>
+      <div className="space-y-2 mb-4">
+        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full" />
+        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
+      </div>
+      <div className="flex space-x-2">
+        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-16" />
+        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20" />
+      </div>
+    </div>
+  )
+}
+
+export default function VentsFeed({
+  vents,
+  loading,
   loadingMore = false,
-  error, 
-  onReaction, 
-  onLoadMore, 
+  error,
+  onReaction,
+  onLoadMore,
   hasMore,
-  selectedTags = []
+  selectedTags = [],
+  currentUserId,
 }: VentsFeedProps) {
   if (error) {
     return (
@@ -40,25 +65,9 @@ export default function VentsFeed({
 
   if (loading && vents.length === 0) {
     return (
-      <div className="space-y-6">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="card animate-pulse">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24" />
-                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-16" />
-              </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
-            </div>
-            <div className="flex space-x-2">
-              <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-16" />
-              <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20" />
-            </div>
-          </div>
+      <div className={GRID_CLASS}>
+        {[...Array(6)].map((_, i) => (
+          <VentCardSkeleton key={i} />
         ))}
       </div>
     )
@@ -72,29 +81,35 @@ export default function VentsFeed({
           {loading ? 'Loading vents...' : 'No vents found'}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {loading 
-            ? 'Please wait while we fetch the latest vents...' 
-            : selectedTags?.length > 0 
+          {loading
+            ? 'Please wait while we fetch the latest vents...'
+            : selectedTags?.length > 0
               ? 'No vents found with the selected mood tags. Try adjusting your filters.'
-              : 'Be the first to share your thoughts and emotions with the community.'
-          }
+              : 'Be the first to share your thoughts and emotions with the community.'}
         </p>
         {!loading && (
-          <button className="btn-primary">
-            Share Your First Vent
-          </button>
+          <button className="btn-primary">Share Your First Vent</button>
         )}
       </div>
     )
   }
 
   return (
-    <HorizontalScrollContainer
-      vents={vents}
-      onReaction={onReaction}
+    <InfiniteScroll
       hasMore={hasMore}
       loading={loadingMore}
       onLoadMore={onLoadMore || (() => {})}
-    />
+    >
+      <div className={GRID_CLASS}>
+        {vents.map((vent) => (
+          <VentCard
+            key={vent.id}
+            vent={vent}
+            onReaction={onReaction}
+            currentUserId={currentUserId}
+          />
+        ))}
+      </div>
+    </InfiniteScroll>
   )
 }

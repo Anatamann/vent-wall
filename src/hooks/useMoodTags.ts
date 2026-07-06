@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import type { MoodTag } from '../lib/supabase'
+import { api } from '../lib/api'
+import type { MoodTag } from '../lib/types'
 
 export function useMoodTags() {
   const [tags, setTags] = useState<MoodTag[]>([])
@@ -11,17 +11,11 @@ export function useMoodTags() {
     try {
       setLoading(true)
       setError(null)
-
-      const { data, error: fetchError } = await supabase
-        .from('mood_tags')
-        .select('*')
-        .order('name')
-
-      if (fetchError) throw fetchError
-
-      setTags(data || [])
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch mood tags')
+      const data = await api.moodTags.list()
+      setTags(data)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch mood tags'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -35,6 +29,6 @@ export function useMoodTags() {
     tags,
     loading,
     error,
-    refetch: fetchTags
+    refetch: fetchTags,
   }
 }

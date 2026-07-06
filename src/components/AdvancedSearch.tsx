@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Search, Filter, Calendar, User, Hash, X } from 'lucide-react'
 import { useMoodTags } from '../hooks/useMoodTags'
-import type { MoodTag } from '../lib/supabase'
+import type { MoodTag } from '../lib/types'
 
 interface SearchFilters {
   query: string

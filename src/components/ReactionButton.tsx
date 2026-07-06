@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import EmojiPicker from './EmojiPicker'
-import type { Reaction } from '../lib/supabase'
+import type { Reaction } from '../lib/types'
+import { MAX_REACTIONS_PER_VENT } from '../lib/constants'
 
 interface ReactionButtonProps {
   reactions: Reaction[]
@@ -18,6 +19,12 @@ export default function ReactionButton({
 }: ReactionButtonProps) {
   const [showPicker, setShowPicker] = useState(false)
   const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 })
+  const [limitMessage, setLimitMessage] = useState<string | null>(null)
+
+  const userReactionCount = currentUserId
+    ? reactions.filter((r) => r.user_id === currentUserId).length
+    : 0
+  const atReactionLimit = userReactionCount >= MAX_REACTIONS_PER_VENT
 
   // Group reactions by emoji and count them
   const reactionGroups = reactions.reduce((acc, reaction) => {
@@ -38,7 +45,12 @@ export default function ReactionButton({
 
   const handleAddReaction = (e: React.MouseEvent) => {
     if (disabled) return
-    
+    if (atReactionLimit) {
+      setLimitMessage(`You can only add ${MAX_REACTIONS_PER_VENT} reactions per vent`)
+      return
+    }
+
+    setLimitMessage(null)
     const rect = e.currentTarget.getBoundingClientRect()
     setPickerPosition({
       x: rect.left + rect.width / 2,
@@ -48,19 +60,30 @@ export default function ReactionButton({
   }
 
   const handleEmojiSelect = (emoji: string) => {
+    const alreadyReacted = reactions.some(
+      (r) => r.user_id === currentUserId && r.emoji === emoji
+    )
+    if (!alreadyReacted && atReactionLimit) {
+      setLimitMessage(`You can only add ${MAX_REACTIONS_PER_VENT} reactions per vent`)
+      return
+    }
+    setLimitMessage(null)
     onReaction(emoji)
   }
 
   const handleReactionClick = (emoji: string, hasUserReacted: boolean) => {
     if (disabled) return
-    
-    // If user has already reacted with this emoji, remove it
-    // Otherwise, add the reaction
+    if (!hasUserReacted && atReactionLimit) {
+      setLimitMessage(`You can only add ${MAX_REACTIONS_PER_VENT} reactions per vent`)
+      return
+    }
+    setLimitMessage(null)
     onReaction(emoji)
   }
 
   return (
-    <div className="flex items-center space-x-2 overflow-hidden">
+    <div className="overflow-hidden">
+      <div className="flex items-center space-x-2">
       {/* Existing Reactions */}
       <div className="flex items-center gap-2 flex-wrap">
         {Object.entries(reactionGroups).map(([emoji, data]) => (
@@ -85,11 +108,27 @@ export default function ReactionButton({
       {!disabled && (
         <button
           onClick={handleAddReaction}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 flex-shrink-0 ml-2"
-          title="Add reaction"
+          disabled={atReactionLimit}
+          className={`inline-flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ml-2 transition-all duration-200 ${
+            atReactionLimit
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300 hover:scale-105'
+          }`}
+          title={
+            atReactionLimit
+              ? `Reaction limit reached (${MAX_REACTIONS_PER_VENT}/${MAX_REACTIONS_PER_VENT})`
+              : `Add reaction (${userReactionCount}/${MAX_REACTIONS_PER_VENT})`
+          }
         >
           <Plus className="w-4 h-4" />
         </button>
+      )}
+      </div>
+
+      {limitMessage && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+          {limitMessage}
+        </p>
       )}
 
       {/* Emoji Picker */}

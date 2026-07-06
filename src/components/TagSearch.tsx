@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, X } from 'lucide-react'
-import type { MoodTag } from '../lib/supabase'
+import type { MoodTag } from '../lib/types'
 
 interface TagSearchProps {
   tags: MoodTag[]

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Trash2, MoreHorizontal, AlertTriangle } from 'lucide-react'
-import type { Vent } from '../lib/supabase'
+import type { Vent } from '../lib/types'
 
 interface UserVentsListProps {
   vents: Vent[]

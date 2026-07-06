@@ -5,15 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "npm run dev --prefix server",
     "build": "tsc && vite build",
+    "build:server": "npm run build --prefix server",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run migrate --prefix server",
+    "db:seed": "npm run seed --prefix server",
+    "db:setup": "npm run db:up && npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
-    "@supabase/supabase-js": "^2.38.4",
+
     "lucide-react": "^0.294.0",
     "date-fns": "^2.30.0"
   },

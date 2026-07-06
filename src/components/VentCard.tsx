@@ -1,16 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import ReactionButton from './ReactionButton'
-import { useAuth } from '../hooks/useAuth'
-import type { Vent } from '../lib/supabase'
+import type { Vent } from '../lib/types'
 
 interface VentCardProps {
   vent: Vent
   onReaction?: (ventId: string, emoji: string) => void
+  currentUserId?: string
 }
 
-export default function VentCard({ vent, onReaction }: VentCardProps) {
-  const { user } = useAuth()
+export default function VentCard({ vent, onReaction, currentUserId }: VentCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
@@ -43,7 +42,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
   return (
     <div 
       ref={cardRef}
-      className={`card vent-card-hover vent-card-enter overflow-hidden ${
+      className={`card vent-card-hover vent-card-enter overflow-hidden h-full flex flex-col ${
         isVisible ? 'vent-card-visible' : ''
       }`}
     >
@@ -67,7 +66,7 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
       </div>
 
       {/* Content */}
-      <div className="mb-4">
+      <div className="mb-4 flex-grow">
         <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
           {vent.content}
         </p>
@@ -94,12 +93,12 @@ export default function VentCard({ vent, onReaction }: VentCardProps) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-start pt-3 border-t border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="flex items-center justify-start pt-3 mt-auto border-t border-gray-100 dark:border-gray-700 overflow-hidden">
         <ReactionButton
           reactions={vent.reactions || []}
           onReaction={(emoji) => onReaction?.(vent.id, emoji)}
-          currentUserId={user?.id}
-          disabled={!user}
+          currentUserId={currentUserId}
+          disabled={!currentUserId}
         />
       </div>
     </div>

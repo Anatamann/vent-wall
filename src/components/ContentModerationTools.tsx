@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { Flag, Shield, AlertTriangle, Eye, EyeOff } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { useState } from 'react'
+import { Flag, Shield, EyeOff } from 'lucide-react'
+import { api } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 
 interface ContentModerationToolsProps {
@@ -37,21 +37,7 @@ export default function ContentModerationTools({
     try {
       setIsSubmitting(true)
 
-      // In a real app, this would go to a moderation queue
-      // For now, we'll store it in a simple reports table structure
-      const reportData = {
-        vent_id: ventId,
-        reporter_id: user.id,
-        reason: reportReason,
-        details: reportDetails,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      }
-
-      // Log the report (in production, this would be stored in a reports table)
-      console.log('Content reported:', reportData)
-
-      // Show success message
+      await api.reports.create(ventId, reportReason, reportDetails || undefined)
       alert('Thank you for your report. Our moderation team will review this content.')
       
       setShowReportModal(false)

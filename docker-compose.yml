@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ventwall-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ventwall
+      POSTGRES_PASSWORD: ventwall
+      POSTGRES_DB: ventwall
+    ports:
+      - "5432:5432"
+    volumes:
+      - ventwall_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ventwall -d ventwall"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ventwall_pgdata:

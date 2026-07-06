@@ -1,4 +1,3 @@
-import React from 'react'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import MoodTagFilter from '../components/MoodTagFilter'
 import TagSearch from '../components/TagSearch'
@@ -6,26 +5,23 @@ import VentsFeed from '../components/VentsFeed'
 import FeedFilters from '../components/FeedFilters'
 import TrendingDashboard from '../components/TrendingDashboard'
 import AdvancedSearch from '../components/AdvancedSearch'
-import PerformanceOptimizer from '../components/PerformanceOptimizer'
 import FloatingPostButton from '../components/FloatingPostButton'
 import PostModal from '../components/PostModal'
 import PostLimitBanner from '../components/PostLimitBanner'
 import { useRealtimeVents } from '../hooks/useRealtimeVents'
 import { useMoodTags } from '../hooks/useMoodTags'
 import { usePostLimits } from '../hooks/usePostLimits'
-import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor'
 import { useAuth } from '../hooks/useAuth'
 import { Search, TrendingUp } from 'lucide-react'
 import type { SortOption, TimeFilter } from '../components/FeedFilters'
 
 export default function Home() {
-  const { isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
-  const [showPerformance, setShowPerformance] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all')
   
@@ -44,8 +40,7 @@ export default function Home() {
     sortBy,
     timeFilter
   })
-  const { canPost } = usePostLimits()
-  const { metrics, optimize } = usePerformanceMonitor()
+  const { canPost, refresh: refreshPostLimits } = usePostLimits()
 
   // Memoize filtered vents count for performance
   const filteredVentsCount = useMemo(() => vents.length, [vents.length])
@@ -69,11 +64,12 @@ export default function Home() {
 
   const handlePostCreated = useCallback(() => {
     refresh()
-  }, [refresh])
+    refreshPostLimits()
+  }, [refresh, refreshPostLimits])
 
   // Debug logging for development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('Home page state:', {
         ventsCount: vents.length,
         loading: ventsLoading,
@@ -93,7 +89,7 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Quick Actions Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsAdvancedSearchOpen(true)}
@@ -115,21 +111,7 @@ export default function Home() {
             <span className="text-sm font-medium">Trending</span>
           </button>
         </div>
-        
-        {process.env.NODE_ENV === 'development' && (
-          <button
-            onClick={() => setShowPerformance(!showPerformance)}
-            className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Performance
-          </button>
-        )}
       </div>
-
-      {/* Performance Monitor (Development Only) */}
-      {process.env.NODE_ENV === 'development' && showPerformance && (
-        <PerformanceOptimizer metrics={metrics} onOptimize={optimize} />
-      )}
 
       {/* Trending Dashboard */}
       {showTrending && <TrendingDashboard />}
@@ -164,6 +146,7 @@ export default function Home() {
         onLoadMore={loadMore}
         onReaction={addReaction}
         selectedTags={selectedTags}
+        currentUserId={user?.id}
       />
 
       {/* Tag Search Modal */}
