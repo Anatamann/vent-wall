@@ -4,6 +4,7 @@ import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { fetchVentsWithRelations } from '../utils/vents.js';
 import { MAX_POSTS_PER_DAY } from '../constants.js';
+import { isUsernameTaken, normalizeUsername, validateUsernameFormat } from '../utils/username.js';
 const router = Router();
 const usernameSchema = z.object({
     username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
@@ -17,8 +18,6 @@ router.get('/me/profile', requireAuth, async (req, res) => {
         if (!profile) {
             return res.status(404).json({ error: 'Profile not found' });
         }
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const allVentsResult = await query('SELECT id, created_at FROM vents WHERE user_id = $1', [userId]);
         const allVents = allVentsResult.rows;
         const ventIds = allVents.map((v) => v.id);
@@ -34,10 +33,9 @@ router.get('/me/profile', requireAuth, async (req, res) => {
         const userVents = await fetchVentsWithRelations({
             userId,
             offset: 0,
-            limit: 100,
+            limit: 500,
             includeExpired: true,
         });
-        const recentVents = userVents.filter((vent) => new Date(vent.created_at) >= thirtyDaysAgo);
         const stats = {
             totalVents: allVents.length,
             totalReactions,
@@ -50,7 +48,7 @@ router.get('/me/profile', requireAuth, async (req, res) => {
         };
         return res.json({
             profile,
-            vents: recentVents,
+            vents: userVents,
             stats,
         });
     }
@@ -64,11 +62,14 @@ router.patch('/me/username', requireAuth, async (req, res) => {
     if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid username' });
     }
-    const { username } = parsed.data;
+    const username = normalizeUsername(parsed.data.username);
+    const format = validateUsernameFormat(username);
+    if (!format.valid) {
+        return res.status(400).json({ error: format.error });
+    }
     try {
-        const existing = await query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, req.user.userId]);
-        if (existing.rowCount) {
-            return res.status(409).json({ error: 'Username is already taken' });
+        if (await isUsernameTaken(username, req.user.userId)) {
+            return res.status(409).json({ error: 'This username is already taken' });
         }
         const result = await query(`UPDATE users SET username = $1 WHERE id = $2
        RETURNING id, username, email, created_at, last_post_date, post_count_today`, [username, req.user.userId]);

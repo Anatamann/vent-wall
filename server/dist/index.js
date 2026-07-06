@@ -13,6 +13,7 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+app.set('trust proxy', 1);
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 const isDev = process.env.NODE_ENV !== 'production';

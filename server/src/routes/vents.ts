@@ -1,8 +1,9 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { query } from '../db.js'
-import { requireAuth } from '../middleware/auth.js'
-import { fetchVentsWithRelations } from '../utils/vents.js'
+import { requireAuth, optionalAuth } from '../middleware/auth.js'
+import { fetchVentsWithRelations, fetchVentById } from '../utils/vents.js'
+import { isOnWall } from '../utils/wall.js'
 import { MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT } from '../constants.js'
 
 const router = Router()
@@ -30,6 +31,27 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Fetch vents error:', err)
     return res.status(500).json({ error: 'Failed to fetch vents' })
+  }
+})
+
+router.get('/:id', optionalAuth, async (req, res) => {
+  try {
+    const vent = await fetchVentById(req.params.id)
+    if (!vent) {
+      return res.status(404).json({ error: 'Vent not found' })
+    }
+
+    const viewerId = req.user?.userId
+    const isOwner = viewerId === vent.user_id
+
+    if (!isOnWall(vent.expires_at) && !isOwner) {
+      return res.status(404).json({ error: 'Vent not found' })
+    }
+
+    return res.json(vent)
+  } catch (err) {
+    console.error('Fetch vent error:', err)
+    return res.status(500).json({ error: 'Failed to fetch vent' })
   }
 })
 
@@ -69,8 +91,8 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const ventResult = await pgClient.query(
-      `INSERT INTO vents (user_id, content)
-       VALUES ($1, $2)
+      `INSERT INTO vents (user_id, content, expires_at)
+       VALUES ($1, $2, now() + INTERVAL '24 hours')
        RETURNING id, user_id, content, created_at, expires_at`,
       [userId, content.trim()]
     )

@@ -21,6 +21,7 @@ export interface Vent {
   content: string
   created_at: string
   expires_at: string
+  is_on_wall?: boolean
   user?: Pick<User, 'id' | 'username'>
   mood_tags?: MoodTag[]
   reactions?: Reaction[]

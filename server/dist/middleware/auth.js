@@ -6,6 +6,18 @@ export function signToken(payload) {
 export function verifyToken(token) {
     return jwt.verify(token, JWT_SECRET);
 }
+export function optionalAuth(req, _res, next) {
+    const header = req.headers.authorization;
+    if (header?.startsWith('Bearer ')) {
+        try {
+            req.user = verifyToken(header.slice(7));
+        }
+        catch {
+            // Treat invalid tokens as anonymous for public routes
+        }
+    }
+    next();
+}
 export function requireAuth(req, res, next) {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {

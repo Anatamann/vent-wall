@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import { pool, query } from '../db.js';
+import { getWallExpiresAt } from '../utils/wall.js';
 dotenv.config();
 const DEMO_PASSWORD = 'demo123';
 const USERS = [
@@ -123,8 +124,7 @@ async function seed() {
         const createdAt = new Date();
         createdAt.setDate(createdAt.getDate() - vent.daysAgo);
         const createdAtIso = createdAt.toISOString();
-        const expiresAt = new Date(createdAt);
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
+        const expiresAt = getWallExpiresAt(createdAt);
         await query(`INSERT INTO vents (id, user_id, content, created_at, expires_at)
        VALUES ($1, $2, $3, $4, $5)`, [vent.id, vent.user_id, vent.content, createdAtIso, expiresAt.toISOString()]);
         for (const tagName of vent.tags) {

@@ -94,6 +94,14 @@ async function request<T>(
 
 export const api = {
   auth: {
+    async checkUsername(username: string): Promise<{
+      available: boolean
+      reason?: string
+    }> {
+      const params = new URLSearchParams({ username })
+      return request(`/auth/check-username?${params.toString()}`, {}, false)
+    },
+
     async register(username: string, email: string, password: string) {
       const data = await request<{ token: string; user: User }>(
         '/auth/register',
@@ -160,6 +168,10 @@ export const api = {
   },
 
   vents: {
+    get(id: string): Promise<Vent> {
+      return request<Vent>(`/vents/${id}`)
+    },
+
     list(params: {
       tags?: string[]
       sort?: string

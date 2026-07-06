@@ -26,7 +26,7 @@ CREATE TABLE vents (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 500),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '1 month')
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '24 hours')
 );
 
 CREATE TABLE vent_tags (

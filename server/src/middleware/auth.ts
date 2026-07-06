@@ -24,6 +24,18 @@ export function verifyToken(token: string): AuthPayload {
   return jwt.verify(token, JWT_SECRET) as AuthPayload
 }
 
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization
+  if (header?.startsWith('Bearer ')) {
+    try {
+      req.user = verifyToken(header.slice(7))
+    } catch {
+      // Treat invalid tokens as anonymous for public routes
+    }
+  }
+  next()
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (!header?.startsWith('Bearer ')) {

@@ -1,4 +1,5 @@
 import { query } from '../db.js';
+import { isOnWall } from './wall.js';
 export async function fetchVentsWithRelations(options) {
     const { userId, tagIds = [], sortBy = 'newest', timeFilter = 'all', offset = 0, limit = 20, includeExpired = false, } = options;
     const conditions = [];
@@ -74,6 +75,7 @@ export async function fetchVentsWithRelations(options) {
         content: row.content,
         created_at: row.created_at,
         expires_at: row.expires_at,
+        is_on_wall: isOnWall(row.expires_at),
         user: { id: row.user_id, username: row.username },
         mood_tags: row.mood_tags ?? [],
         reactions: row.reactions ?? [],
@@ -92,6 +94,56 @@ export async function fetchVentsWithRelations(options) {
         });
     }
     return vents;
+}
+export async function fetchVentById(ventId) {
+    const result = await query(`
+    SELECT
+      v.id,
+      v.user_id,
+      v.content,
+      v.created_at,
+      v.expires_at,
+      u.username,
+      COALESCE(
+        json_agg(DISTINCT jsonb_build_object(
+          'id', mt.id,
+          'name', mt.name,
+          'color', mt.color,
+          'emoji', mt.emoji
+        )) FILTER (WHERE mt.id IS NOT NULL),
+        '[]'
+      ) AS mood_tags,
+      COALESCE(
+        json_agg(DISTINCT jsonb_build_object(
+          'id', r.id,
+          'emoji', r.emoji,
+          'user_id', r.user_id,
+          'created_at', r.created_at
+        )) FILTER (WHERE r.id IS NOT NULL),
+        '[]'
+      ) AS reactions
+    FROM vents v
+    JOIN users u ON u.id = v.user_id
+    LEFT JOIN vent_tags vt ON vt.vent_id = v.id
+    LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
+    LEFT JOIN reactions r ON r.vent_id = v.id
+    WHERE v.id = $1
+    GROUP BY v.id, u.username
+    `, [ventId]);
+    const row = result.rows[0];
+    if (!row)
+        return null;
+    return {
+        id: row.id,
+        user_id: row.user_id,
+        content: row.content,
+        created_at: row.created_at,
+        expires_at: row.expires_at,
+        is_on_wall: isOnWall(row.expires_at),
+        user: { id: row.user_id, username: row.username },
+        mood_tags: row.mood_tags ?? [],
+        reactions: row.reactions ?? [],
+    };
 }
 function getTimeFilterDate(timeFilter) {
     const now = new Date();
