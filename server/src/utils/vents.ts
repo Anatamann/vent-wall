@@ -1,8 +1,11 @@
 import { query } from '../db.js'
+import { fetchCommentsForVent } from './comments.js'
+import { resolveVentUuid } from './slug.js'
 import { isOnWall } from './wall.js'
 
 export interface VentRow {
   id: string
+  slug: string
   user_id: string
   content: string
   created_at: string
@@ -72,6 +75,7 @@ export async function fetchVentsWithRelations(options: {
 
   const result = await query<{
     id: string
+    slug: string
     user_id: string
     content: string
     created_at: string
@@ -83,6 +87,7 @@ export async function fetchVentsWithRelations(options: {
     `
     SELECT
       v.id,
+      v.slug,
       v.user_id,
       v.content,
       v.created_at,
@@ -112,7 +117,7 @@ export async function fetchVentsWithRelations(options: {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     ${whereClause}
-    GROUP BY v.id, u.username
+    GROUP BY v.id, v.slug, u.username
     ${orderClause}
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `,
@@ -121,6 +126,7 @@ export async function fetchVentsWithRelations(options: {
 
   let vents = result.rows.map((row) => ({
     id: row.id,
+    slug: row.slug,
     user_id: row.user_id,
     content: row.content,
     created_at: row.created_at,
@@ -147,9 +153,17 @@ export async function fetchVentsWithRelations(options: {
   return vents as unknown as VentRow[]
 }
 
+export async function fetchVentByIdentifier(identifier: string) {
+  const ventId = await resolveVentUuid(identifier)
+  if (!ventId) return null
+
+  return fetchVentById(ventId)
+}
+
 export async function fetchVentById(ventId: string) {
   const result = await query<{
     id: string
+    slug: string
     user_id: string
     content: string
     created_at: string
@@ -161,6 +175,7 @@ export async function fetchVentById(ventId: string) {
     `
     SELECT
       v.id,
+      v.slug,
       v.user_id,
       v.content,
       v.created_at,
@@ -190,7 +205,7 @@ export async function fetchVentById(ventId: string) {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username
+    GROUP BY v.id, v.slug, u.username
     `,
     [ventId]
   )
@@ -198,16 +213,29 @@ export async function fetchVentById(ventId: string) {
   const row = result.rows[0]
   if (!row) return null
 
+  const onWall = isOnWall(row.expires_at)
+  const comments = onWall ? await fetchCommentsForVent(ventId) : []
+
   return {
     id: row.id,
+    slug: row.slug,
     user_id: row.user_id,
     content: row.content,
     created_at: row.created_at,
     expires_at: row.expires_at,
-    is_on_wall: isOnWall(row.expires_at),
+    is_on_wall: onWall,
     user: { id: row.user_id, username: row.username },
     mood_tags: row.mood_tags ?? [],
     reactions: row.reactions ?? [],
+    comments: comments.map((c) => ({
+      id: c.id,
+      vent_id: c.vent_id,
+      user_id: c.user_id,
+      emoji: c.emoji,
+      created_at: c.created_at,
+      user: { id: c.user_id, username: c.username },
+    })),
+    comments_open: onWall,
   }
 }
 

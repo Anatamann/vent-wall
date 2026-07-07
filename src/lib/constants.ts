@@ -1,3 +1,5 @@
 export const MAX_POSTS_PER_DAY = 3
 export const MAX_REACTIONS_PER_VENT = 3
+export const MAX_COMMENTS_PER_USER_PER_VENT = 10
 export const WALL_VISIBILITY_HOURS = 24
+export const VENT_CARD_PREVIEW_LENGTH = 80

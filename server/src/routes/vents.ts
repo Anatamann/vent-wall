@@ -2,11 +2,33 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query } from '../db.js'
 import { requireAuth, optionalAuth } from '../middleware/auth.js'
-import { fetchVentsWithRelations, fetchVentById } from '../utils/vents.js'
+import { generateUniqueVentSlug, resolveVentUuid } from '../utils/slug.js'
+import { fetchVentsWithRelations, fetchVentById, fetchVentByIdentifier } from '../utils/vents.js'
+import {
+  fetchCommentsForVent,
+  validateEmojiComment,
+  ventAcceptsComments,
+} from '../utils/comments.js'
 import { isOnWall } from '../utils/wall.js'
-import { MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT } from '../constants.js'
+import {
+  MAX_COMMENTS_PER_USER_PER_VENT,
+  MAX_POSTS_PER_DAY,
+  MAX_REACTIONS_PER_VENT,
+} from '../constants.js'
 
 const router = Router()
+
+async function resolveVentIdOr404(
+  identifier: string,
+  res: import('express').Response
+): Promise<string | null> {
+  const ventId = await resolveVentUuid(identifier)
+  if (!ventId) {
+    res.status(404).json({ error: 'Vent not found' })
+    return null
+  }
+  return ventId
+}
 
 const createVentSchema = z.object({
   content: z.string().min(1).max(500),
@@ -34,9 +56,99 @@ router.get('/', async (req, res) => {
   }
 })
 
+router.get('/:id/comments', optionalAuth, async (req, res) => {
+  try {
+    const vent = await fetchVentByIdentifier(req.params.id)
+    if (!vent) {
+      return res.status(404).json({ error: 'Vent not found' })
+    }
+
+    const viewerId = req.user?.userId
+    const isOwner = viewerId === vent.user_id
+
+    if (!vent.is_on_wall && !isOwner) {
+      return res.status(404).json({ error: 'Vent not found' })
+    }
+
+    const comments = vent.is_on_wall ? await fetchCommentsForVent(vent.id) : []
+
+    return res.json({
+      comments: comments.map((c) => ({
+        id: c.id,
+        vent_id: c.vent_id,
+        user_id: c.user_id,
+        emoji: c.emoji,
+        created_at: c.created_at,
+        user: { id: c.user_id, username: c.username },
+      })),
+      comments_open: vent.is_on_wall,
+    })
+  } catch (err) {
+    console.error('Fetch comments error:', err)
+    return res.status(500).json({ error: 'Failed to fetch comments' })
+  }
+})
+
+router.post('/:id/comments', requireAuth, async (req, res) => {
+  const emoji = String(req.body.emoji || '').trim()
+  const validation = validateEmojiComment(emoji)
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error })
+  }
+
+  const userId = req.user!.userId
+
+  try {
+    const ventId = await resolveVentIdOr404(req.params.id, res)
+    if (!ventId) return
+
+    const ventCheck = await ventAcceptsComments(ventId)
+    if (!ventCheck.accepts) {
+      return res.status(403).json({
+        error: 'Comments are only available while this post is on the Wall',
+      })
+    }
+
+    const countResult = await query<{ count: number }>(
+      `SELECT COUNT(*)::int AS count FROM vent_comments
+       WHERE vent_id = $1 AND user_id = $2`,
+      [ventId, userId]
+    )
+
+    if ((countResult.rows[0]?.count ?? 0) >= MAX_COMMENTS_PER_USER_PER_VENT) {
+      return res.status(429).json({
+        error: `You can only add up to ${MAX_COMMENTS_PER_USER_PER_VENT} comments per post`,
+      })
+    }
+
+    const inserted = await query(
+      `INSERT INTO vent_comments (vent_id, user_id, emoji)
+       VALUES ($1, $2, $3)
+       RETURNING id, vent_id, user_id, emoji, created_at`,
+      [ventId, userId, emoji]
+    )
+
+    const comment = inserted.rows[0]
+    const userResult = await query(
+      'SELECT username FROM users WHERE id = $1',
+      [userId]
+    )
+
+    return res.status(201).json({
+      comment: {
+        ...comment,
+        user: { id: userId, username: userResult.rows[0]?.username },
+      },
+    })
+  } catch (err) {
+    console.error('Create comment error:', err)
+    return res.status(500).json({ error: 'Failed to add comment' })
+  }
+})
+
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const vent = await fetchVentById(req.params.id)
+    const vent = await fetchVentByIdentifier(req.params.id)
     if (!vent) {
       return res.status(404).json({ error: 'Vent not found' })
     }
@@ -90,11 +202,13 @@ router.post('/', requireAuth, async (req, res) => {
       })
     }
 
+    const slug = await generateUniqueVentSlug()
+
     const ventResult = await pgClient.query(
-      `INSERT INTO vents (user_id, content, expires_at)
-       VALUES ($1, $2, now() + INTERVAL '24 hours')
-       RETURNING id, user_id, content, created_at, expires_at`,
-      [userId, content.trim()]
+      `INSERT INTO vents (user_id, content, slug, expires_at)
+       VALUES ($1, $2, $3, now() + INTERVAL '24 hours')
+       RETURNING id, slug, user_id, content, created_at, expires_at`,
+      [userId, content.trim(), slug]
     )
     const vent = ventResult.rows[0]
 
@@ -128,9 +242,12 @@ router.post('/', requireAuth, async (req, res) => {
 
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    const ventId = await resolveVentIdOr404(req.params.id, res)
+    if (!ventId) return
+
     const result = await query(
       'DELETE FROM vents WHERE id = $1 AND user_id = $2 RETURNING id',
-      [req.params.id, req.user!.userId]
+      [ventId, req.user!.userId]
     )
 
     if (!result.rowCount) {
@@ -150,10 +267,12 @@ router.post('/:id/reactions', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Emoji is required' })
   }
 
-  const ventId = req.params.id
   const userId = req.user!.userId
 
   try {
+    const ventId = await resolveVentIdOr404(req.params.id, res)
+    if (!ventId) return
+
     const existing = await query(
       'SELECT id FROM reactions WHERE vent_id = $1 AND user_id = $2 AND emoji = $3',
       [ventId, userId, emoji]

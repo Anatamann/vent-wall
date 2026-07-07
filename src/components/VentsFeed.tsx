@@ -8,11 +8,9 @@ interface VentsFeedProps {
   loading: boolean
   loadingMore?: boolean
   error: string | null
-  onReaction?: (ventId: string, emoji: string) => void
   onLoadMore?: () => void
   hasMore: boolean
   selectedTags?: string[]
-  currentUserId?: string
 }
 
 const GRID_CLASS =
@@ -45,11 +43,9 @@ export default function VentsFeed({
   loading,
   loadingMore = false,
   error,
-  onReaction,
   onLoadMore,
   hasMore,
   selectedTags = [],
-  currentUserId,
 }: VentsFeedProps) {
   if (error) {
     return (
@@ -102,12 +98,7 @@ export default function VentsFeed({
     >
       <div className={GRID_CLASS}>
         {vents.map((vent) => (
-          <VentCard
-            key={vent.id}
-            vent={vent}
-            onReaction={onReaction}
-            currentUserId={currentUserId}
-          />
+          <VentCard key={vent.id} vent={vent} />
         ))}
       </div>
     </InfiniteScroll>

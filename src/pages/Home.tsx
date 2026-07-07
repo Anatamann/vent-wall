@@ -33,7 +33,6 @@ export default function Home() {
     error, 
     hasMore,
     loadMore,
-    addReaction, 
     refresh 
   } = useRealtimeVents({
     selectedTags,
@@ -144,9 +143,7 @@ export default function Home() {
         error={error}
         hasMore={hasMore}
         onLoadMore={loadMore}
-        onReaction={addReaction}
         selectedTags={selectedTags}
-        currentUserId={user?.id}
       />
 
       {/* Tag Search Modal */}

@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { Trash2, MoreHorizontal, AlertTriangle } from 'lucide-react'
+import { truncateVentContent } from '../lib/format'
 import type { Vent } from '../lib/types'
 
 interface UserVentsListProps {
@@ -80,6 +82,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
       <div className="space-y-4">
         {vents.map((vent) => {
           const onWall = vent.is_on_wall ?? new Date(vent.expires_at) >= new Date()
+          const { preview, isTruncated } = truncateVentContent(vent.content)
 
           return (
             <div
@@ -104,9 +107,23 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
               </div>
 
               <div className="mb-3">
-                <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
-                  {vent.content}
-                </p>
+                {onWall ? (
+                  <Link
+                    to={`/post/${vent.slug}`}
+                    className="block text-gray-800 dark:text-gray-200 leading-relaxed hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    <p>{preview}</p>
+                    {isTruncated && (
+                      <span className="text-sm text-primary-600 dark:text-primary-400 font-medium mt-1 inline-block">
+                        Read full post →
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {vent.content}
+                  </p>
+                )}
               </div>
 
               {vent.mood_tags && vent.mood_tags.length > 0 && (

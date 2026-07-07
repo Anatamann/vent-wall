@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import dotenv from 'dotenv'
 import { pool, query } from '../db.js'
+import { backfillMissingVentSlugs } from '../utils/slug.js'
 import { getWallExpiresAt } from '../utils/wall.js'
 
 dotenv.config()
@@ -40,147 +41,325 @@ const MOOD_TAGS = [
 const VENTS = [
   {
     id: '33333333-3333-3333-3333-333333333301',
+    slug: 'peace2am',
     user_id: USERS[0].id,
-    content: 'Morning meditation helped me find a moment of peace before the chaos of the day begins.',
-    daysAgo: 1,
+    content:
+      'Morning meditation helped me find a moment of peace before the chaos of the day begins.',
+    hoursAgo: 18,
     tags: ['Calm', 'Grateful', 'Peaceful'],
   },
   {
     id: '33333333-3333-3333-3333-333333333302',
+    slug: 'nyte2amx',
     user_id: USERS[1].id,
-    content: 'Another sleepless night. My mind just will not stop racing through every possible scenario.',
-    daysAgo: 0,
+    content:
+      'Another sleepless night. My mind just will not stop racing through every possible scenario.',
+    hoursAgo: 2,
     tags: ['Anxious', 'Overwhelmed'],
   },
   {
     id: '33333333-3333-3333-3333-333333333303',
+    slug: 'caff33am',
     user_id: USERS[2].id,
     content: 'Grateful for this quiet morning coffee and the sunrise painting the sky orange.',
-    daysAgo: 0,
+    hoursAgo: 4,
     tags: ['Grateful', 'Happy', 'Hopeful'],
   },
   {
     id: '33333333-3333-3333-3333-333333333304',
+    slug: 'wave5hmt',
     user_id: USERS[3].id,
-    content: 'The ocean always knows how to wash away the heaviness. Walked the beach until I felt lighter.',
-    daysAgo: 2,
+    content:
+      'The ocean always knows how to wash away the heaviness. Walked the beach until I felt lighter.',
+    hoursAgo: 50,
     tags: ['Calm', 'Peaceful', 'Nostalgic'],
   },
   {
     id: '33333333-3333-3333-3333-333333333305',
+    slug: 'ctywr3nt',
     user_id: USERS[4].id,
     content: 'City energy is exhausting today. Too many people, too much noise, not enough air.',
-    daysAgo: 1,
+    hoursAgo: 20,
     tags: ['Frustrated', 'Overwhelmed'],
   },
   {
     id: '33333333-3333-3333-3333-333333333306',
+    slug: 'grw7thmx',
     user_id: USERS[5].id,
-    content: 'Growth is uncomfortable. Learning to sit with difficult feelings instead of running from them.',
-    daysAgo: 3,
+    content:
+      'Growth is uncomfortable. Learning to sit with difficult feelings instead of running from them.',
+    hoursAgo: 80,
     tags: ['Hopeful', 'Motivated', 'Confused'],
   },
   {
     id: '33333333-3333-3333-3333-333333333307',
+    slug: 'newd4awn',
     user_id: USERS[6].id,
-    content: 'New day, new chances. Trying to believe that things can get better even when yesterday was hard.',
-    daysAgo: 0,
+    content:
+      'New day, new chances. Trying to believe that things can get better even when yesterday was hard.',
+    hoursAgo: 1,
     tags: ['Hopeful', 'Motivated'],
   },
   {
     id: '33333333-3333-3333-3333-333333333308',
+    slug: 'p3tmn3xw',
     user_id: USERS[7].id,
     content: 'Wrote three pages of feelings I could not say out loud. Poetry is my safest room.',
-    daysAgo: 1,
+    hoursAgo: 15,
     tags: ['Sad', 'Nostalgic', 'Calm'],
   },
   {
     id: '33333333-3333-3333-3333-333333333309',
+    slug: 'smawdn2x',
     user_id: USERS[0].id,
-    content: 'Small wins matter. Finished a task I had been avoiding for weeks and feel surprisingly proud.',
-    daysAgo: 4,
+    content:
+      'Small wins matter. Finished a task I had been avoiding for weeks and feel surprisingly proud.',
+    hoursAgo: 100,
     tags: ['Motivated', 'Happy'],
   },
   {
     id: '33333333-3333-3333-3333-333333333310',
+    slug: 'n3yerm2x',
     user_id: USERS[1].id,
     content: 'Feeling lonely in a crowded room again. Wish connection felt easier sometimes.',
-    daysAgo: 2,
+    hoursAgo: 48,
     tags: ['Lonely', 'Sad'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333311',
+    slug: 'tdysght2',
+    user_id: USERS[2].id,
+    content: 'Today felt lighter.',
+    hoursAgo: 6,
+    tags: ['Happy', 'Calm'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333312',
+    slug: 'repray2n',
+    user_id: USERS[1].id,
+    content:
+      'I keep replaying conversations from years ago like they are happening right now. Why does the mind do this at 2am? I know logically that everyone has moved on, but emotionally I am still standing in that hallway wondering what I should have said differently.',
+    hoursAgo: 8,
+    tags: ['Anxious', 'Nostalgic', 'Sad'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333313',
+    slug: 'satarx2m',
+    user_id: USERS[3].id,
+    content:
+      'Salt air, cold sand, and the sound of waves until my thoughts finally went quiet. Nature therapy is real.',
+    hoursAgo: 10,
+    tags: ['Peaceful', 'Calm', 'Grateful'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333314',
+    slug: 'msstrn2x',
+    user_id: USERS[4].id,
+    content: 'Missed my train. Late to everything. Urban life is a constant sprint.',
+    hoursAgo: 3,
+    tags: ['Frustrated', 'Anxious'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333315',
+    slug: 'therapyh',
+    user_id: USERS[5].id,
+    content:
+      'Therapy homework: name the feeling without judging it. Today I named it grief, and that alone made it softer.',
+    hoursAgo: 22,
+    tags: ['Sad', 'Hopeful', 'Calm'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333316',
+    slug: 'frstrun2',
+    user_id: USERS[6].id,
+    content: 'First run in months. Legs burned, heart raced, but I feel alive again.',
+    hoursAgo: 5,
+    tags: ['Motivated', 'Excited', 'Happy'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333317',
+    slug: 'p3mstn2w',
+    user_id: USERS[7].id,
+    content:
+      'Some poems are just screams in prettier fonts. Wrote one tonight and deleted it twice before keeping a single stanza.',
+    hoursAgo: 12,
+    tags: ['Sad', 'Confused', 'Nostalgic'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333318',
+    slug: 'br3ath2e',
+    user_id: USERS[0].id,
+    content: 'Breathed in. Breathed out. That is enough for today.',
+    hoursAgo: 7,
+    tags: ['Calm', 'Peaceful'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333319',
+    slug: 'dempst2x',
+    user_id: USERS[8].id,
+    content:
+      'Testing Vent Wall with the demo account. Grateful this exists as a place to share without pressure.',
+    hoursAgo: 2,
+    tags: ['Grateful', 'Hopeful'],
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333320',
+    slug: 'surfwave',
+    user_id: USERS[3].id,
+    content:
+      'Surfed until my arms gave out. For an hour the only thing that mattered was the next wave.',
+    hoursAgo: 72,
+    tags: ['Excited', 'Happy', 'Peaceful'],
   },
 ]
 
-async function seed() {
-  const existing = await query('SELECT COUNT(*)::int AS count FROM users')
-  if (existing.rows[0].count > 0) {
-    console.log('Database already seeded — skipping')
-    await pool.end()
-    return
-  }
+const REACTIONS = [
+  { vent_id: VENTS[0].id, user_id: USERS[2].id, emoji: '🙏' },
+  { vent_id: VENTS[0].id, user_id: USERS[3].id, emoji: '😌' },
+  { vent_id: VENTS[0].id, user_id: USERS[6].id, emoji: '❤️' },
+  { vent_id: VENTS[1].id, user_id: USERS[0].id, emoji: '🫂' },
+  { vent_id: VENTS[1].id, user_id: USERS[6].id, emoji: '❤️' },
+  { vent_id: VENTS[1].id, user_id: USERS[4].id, emoji: '🙏' },
+  { vent_id: VENTS[1].id, user_id: USERS[7].id, emoji: '🌙' },
+  { vent_id: VENTS[2].id, user_id: USERS[4].id, emoji: '☕' },
+  { vent_id: VENTS[2].id, user_id: USERS[7].id, emoji: '🌅' },
+  { vent_id: VENTS[2].id, user_id: USERS[0].id, emoji: '😊' },
+  { vent_id: VENTS[2].id, user_id: USERS[5].id, emoji: '✨' },
+  { vent_id: VENTS[3].id, user_id: USERS[1].id, emoji: '🌊' },
+  { vent_id: VENTS[3].id, user_id: USERS[2].id, emoji: '🏄' },
+  { vent_id: VENTS[4].id, user_id: USERS[5].id, emoji: '🤗' },
+  { vent_id: VENTS[4].id, user_id: USERS[3].id, emoji: '🌃' },
+  { vent_id: VENTS[5].id, user_id: USERS[6].id, emoji: '💪' },
+  { vent_id: VENTS[5].id, user_id: USERS[0].id, emoji: '🌈' },
+  { vent_id: VENTS[6].id, user_id: USERS[2].id, emoji: '🌟' },
+  { vent_id: VENTS[6].id, user_id: USERS[1].id, emoji: '🔥' },
+  { vent_id: VENTS[6].id, user_id: USERS[4].id, emoji: '💪' },
+  { vent_id: VENTS[7].id, user_id: USERS[0].id, emoji: '✨' },
+  { vent_id: VENTS[7].id, user_id: USERS[3].id, emoji: '📝' },
+  { vent_id: VENTS[8].id, user_id: USERS[2].id, emoji: '👏' },
+  { vent_id: VENTS[9].id, user_id: USERS[5].id, emoji: '🫂' },
+  { vent_id: VENTS[9].id, user_id: USERS[6].id, emoji: '❤️' },
+  { vent_id: VENTS[10].id, user_id: USERS[3].id, emoji: '😊' },
+  { vent_id: VENTS[11].id, user_id: USERS[0].id, emoji: '🫂' },
+  { vent_id: VENTS[11].id, user_id: USERS[2].id, emoji: '🙏' },
+  { vent_id: VENTS[12].id, user_id: USERS[1].id, emoji: '🌊' },
+  { vent_id: VENTS[13].id, user_id: USERS[5].id, emoji: '🤗' },
+  { vent_id: VENTS[15].id, user_id: USERS[4].id, emoji: '🔥' },
+  { vent_id: VENTS[15].id, user_id: USERS[7].id, emoji: '💪' },
+  { vent_id: VENTS[17].id, user_id: USERS[6].id, emoji: '🕊️' },
+  { vent_id: VENTS[18].id, user_id: USERS[0].id, emoji: '👏' },
+  { vent_id: VENTS[18].id, user_id: USERS[2].id, emoji: '❤️' },
+]
 
+const COMMENTS = [
+  { id: '44444444-4444-4444-4444-444444444401', vent_id: VENTS[1].id, user_id: USERS[2].id, emoji: '🫂' },
+  { id: '44444444-4444-4444-4444-444444444402', vent_id: VENTS[1].id, user_id: USERS[5].id, emoji: '💙' },
+  { id: '44444444-4444-4444-4444-444444444403', vent_id: VENTS[2].id, user_id: USERS[0].id, emoji: '☕' },
+  { id: '44444444-4444-4444-4444-444444444404', vent_id: VENTS[2].id, user_id: USERS[4].id, emoji: '🌅' },
+  { id: '44444444-4444-4444-4444-444444444405', vent_id: VENTS[6].id, user_id: USERS[1].id, emoji: '🌟' },
+  { id: '44444444-4444-4444-4444-444444444406', vent_id: VENTS[6].id, user_id: USERS[3].id, emoji: '💪' },
+  { id: '44444444-4444-4444-4444-444444444407', vent_id: VENTS[6].id, user_id: USERS[7].id, emoji: '✨' },
+  { id: '44444444-4444-4444-4444-444444444408', vent_id: VENTS[11].id, user_id: USERS[4].id, emoji: '🫂' },
+  { id: '44444444-4444-4444-4444-444444444409', vent_id: VENTS[13].id, user_id: USERS[2].id, emoji: '🤗' },
+  { id: '44444444-4444-4444-4444-444444444410', vent_id: VENTS[15].id, user_id: USERS[0].id, emoji: '🔥' },
+  { id: '44444444-4444-4444-4444-444444444411', vent_id: VENTS[18].id, user_id: USERS[3].id, emoji: '👏' },
+  { id: '44444444-4444-4444-4444-444444444412', vent_id: VENTS[18].id, user_id: USERS[6].id, emoji: '❤️' },
+]
+
+function ventTimestamps(hoursAgo: number) {
+  const createdAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000)
+  return {
+    createdAt: createdAt.toISOString(),
+    expiresAt: getWallExpiresAt(createdAt).toISOString(),
+  }
+}
+
+async function seed() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12)
+  const tagByName = Object.fromEntries(MOOD_TAGS.map((t) => [t.name, t.id]))
+
+  let usersAdded = 0
+  let ventsSynced = 0
+  let reactionsAdded = 0
+  let commentsAdded = 0
 
   for (const user of USERS) {
-    await query(
+    const result = await query(
       `INSERT INTO users (id, username, email, password_hash, last_post_date, post_count_today)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE, 0)`,
+       VALUES ($1, $2, $3, $4, CURRENT_DATE, 0)
+       ON CONFLICT (id) DO UPDATE
+         SET username = EXCLUDED.username,
+             email = EXCLUDED.email
+       RETURNING (xmax = 0) AS inserted`,
       [user.id, user.username, user.email, passwordHash]
     )
+    if (result.rows[0]?.inserted) usersAdded++
   }
 
   for (const tag of MOOD_TAGS) {
     await query(
-      `INSERT INTO mood_tags (id, name, color, emoji) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO mood_tags (id, name, color, emoji)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO NOTHING`,
       [tag.id, tag.name, tag.color, tag.emoji]
     )
   }
 
-  const tagByName = Object.fromEntries(MOOD_TAGS.map((t) => [t.name, t.id]))
-
   for (const vent of VENTS) {
-    const createdAt = new Date()
-    createdAt.setDate(createdAt.getDate() - vent.daysAgo)
-
-    const createdAtIso = createdAt.toISOString()
-    const expiresAt = getWallExpiresAt(createdAt)
+    const { createdAt, expiresAt } = ventTimestamps(vent.hoursAgo)
 
     await query(
-      `INSERT INTO vents (id, user_id, content, created_at, expires_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [vent.id, vent.user_id, vent.content, createdAtIso, expiresAt.toISOString()]
+      `INSERT INTO vents (id, user_id, content, slug, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE
+         SET content = EXCLUDED.content,
+             slug = EXCLUDED.slug,
+             created_at = EXCLUDED.created_at,
+             expires_at = EXCLUDED.expires_at`,
+      [vent.id, vent.user_id, vent.content, vent.slug, createdAt, expiresAt]
     )
+    ventsSynced++
 
+    await query('DELETE FROM vent_tags WHERE vent_id = $1', [vent.id])
     for (const tagName of vent.tags) {
       await query(
-        'INSERT INTO vent_tags (vent_id, tag_id) VALUES ($1, $2)',
+        `INSERT INTO vent_tags (vent_id, tag_id) VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
         [vent.id, tagByName[tagName]]
       )
     }
   }
 
-  const reactions = [
-    { vent_id: VENTS[0].id, user_id: USERS[2].id, emoji: '🙏' },
-    { vent_id: VENTS[0].id, user_id: USERS[3].id, emoji: '😌' },
-    { vent_id: VENTS[1].id, user_id: USERS[0].id, emoji: '🫂' },
-    { vent_id: VENTS[1].id, user_id: USERS[6].id, emoji: '❤️' },
-    { vent_id: VENTS[2].id, user_id: USERS[4].id, emoji: '☕' },
-    { vent_id: VENTS[2].id, user_id: USERS[7].id, emoji: '🌅' },
-    { vent_id: VENTS[3].id, user_id: USERS[1].id, emoji: '🌊' },
-    { vent_id: VENTS[4].id, user_id: USERS[5].id, emoji: '🤗' },
-    { vent_id: VENTS[5].id, user_id: USERS[6].id, emoji: '💪' },
-    { vent_id: VENTS[6].id, user_id: USERS[2].id, emoji: '🌟' },
-    { vent_id: VENTS[7].id, user_id: USERS[0].id, emoji: '✨' },
-    { vent_id: VENTS[7].id, user_id: USERS[3].id, emoji: '📝' },
-  ]
-
-  for (const reaction of reactions) {
-    await query(
-      'INSERT INTO reactions (vent_id, user_id, emoji) VALUES ($1, $2, $3)',
+  for (const reaction of REACTIONS) {
+    const result = await query(
+      `INSERT INTO reactions (vent_id, user_id, emoji)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (vent_id, user_id, emoji) DO NOTHING
+       RETURNING id`,
       [reaction.vent_id, reaction.user_id, reaction.emoji]
     )
+    if (result.rowCount) reactionsAdded++
   }
 
-  console.log('Seed complete')
+  for (const comment of COMMENTS) {
+    const result = await query(
+      `INSERT INTO vent_comments (id, vent_id, user_id, emoji)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [comment.id, comment.vent_id, comment.user_id, comment.emoji]
+    )
+    if (result.rowCount) commentsAdded++
+  }
+
+  const slugsBackfilled = await backfillMissingVentSlugs()
+
+  console.log('Seed sync complete')
+  console.log(`  Users added: ${usersAdded}`)
+  console.log(`  Demo vents synced: ${ventsSynced}`)
+  console.log(`  Reactions added: ${reactionsAdded}`)
+  console.log(`  Comments added: ${commentsAdded}`)
+  console.log(`  Slugs backfilled: ${slugsBackfilled}`)
   console.log(`Demo accounts: any seeded username / password "${DEMO_PASSWORD}"`)
   console.log('Quick login: demo / demo123')
   await pool.end()

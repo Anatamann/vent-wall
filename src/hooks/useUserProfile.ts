@@ -62,7 +62,8 @@ export function useUserProfile() {
 
   const deleteVent = async (ventId: string) => {
     if (!user) throw new Error('Not authenticated')
-    await api.vents.delete(ventId)
+    const vent = userVents.find((v) => v.id === ventId)
+    await api.vents.delete(vent?.slug || ventId)
     await fetchUserProfile()
   }
 

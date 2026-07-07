@@ -211,13 +211,19 @@ The API must be running on port **4000** before you use the app. Start Terminal 
 
 Another process is using that port. Stop it, or change `PORT` in `server/.env` and update the Vite proxy in `vite.config.ts` if needed.
 
-### Seed says "Database already seeded — skipping"
+### Re-sync demo sample data
 
-This is normal. Data already exists. To wipe and re-seed:
+The seed script is idempotent — it adds missing demo users, vents, reactions, and comments, and refreshes demo post wall timers. Safe to run anytime:
+
+```bash
+npm run db:seed
+```
+
+To wipe **everything** and re-seed from scratch:
 
 ```bash
 PGPASSWORD=ventwall psql -h localhost -U ventwall -d ventwall \
-  -c "TRUNCATE users, mood_tags, vents, vent_tags, reactions, reports CASCADE;"
+  -c "TRUNCATE vent_comments, registration_attempts, blocked_ip_hashes, users, mood_tags, vents, vent_tags, reactions, reports CASCADE;"
 npm run db:seed
 ```
 

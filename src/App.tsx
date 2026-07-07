@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Profile from './pages/Profile'
+import PostDetail from './pages/PostDetail'
 import Auth from './pages/Auth'
 import LoadingSpinner from './components/LoadingSpinner'
 
@@ -23,6 +24,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
           {/* Catch all route - redirect to home */}

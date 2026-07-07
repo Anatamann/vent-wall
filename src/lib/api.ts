@@ -1,4 +1,4 @@
-import type { AuthUser, MoodTag, User, Vent } from './types'
+import type { AuthUser, MoodTag, User, Vent, VentComment } from './types'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 const TOKEN_KEY = 'ventwall_token'
@@ -168,8 +168,8 @@ export const api = {
   },
 
   vents: {
-    get(id: string): Promise<Vent> {
-      return request<Vent>(`/vents/${id}`)
+    get(slug: string): Promise<Vent> {
+      return request<Vent>(`/vents/${slug}`)
     },
 
     list(params: {
@@ -197,12 +197,26 @@ export const api = {
       })
     },
 
-    delete(id: string): Promise<void> {
-      return request<void>(`/vents/${id}`, { method: 'DELETE' })
+    delete(slug: string): Promise<void> {
+      return request<void>(`/vents/${slug}`, { method: 'DELETE' })
     },
 
-    toggleReaction(ventId: string, emoji: string): Promise<{ action: 'added' | 'removed' }> {
-      return request(`/vents/${ventId}/reactions`, {
+    toggleReaction(slug: string, emoji: string): Promise<{ action: 'added' | 'removed' }> {
+      return request(`/vents/${slug}/reactions`, {
+        method: 'POST',
+        body: JSON.stringify({ emoji }),
+      })
+    },
+
+    listComments(slug: string): Promise<{
+      comments: VentComment[]
+      comments_open: boolean
+    }> {
+      return request(`/vents/${slug}/comments`, {}, false)
+    },
+
+    addComment(slug: string, emoji: string): Promise<{ comment: VentComment }> {
+      return request(`/vents/${slug}/comments`, {
         method: 'POST',
         body: JSON.stringify({ emoji }),
       })
