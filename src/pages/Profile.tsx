@@ -1,7 +1,6 @@
-import React from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserProfile } from '../hooks/useUserProfile'
-import { Navigate, Link, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import UsernameEditor from '../components/UsernameEditor'
 import UserStats from '../components/UserStats'
 import UserVentsList from '../components/UserVentsList'
@@ -9,7 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { ArrowLeft } from 'lucide-react'
 
 export default function Profile() {
-  const { isAuthenticated, profileExists, loading: authLoading } = useAuth()
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const { 
     userProfile, 
@@ -17,21 +16,11 @@ export default function Profile() {
     userStats, 
     loading, 
     error, 
-    updateUsername, 
-    deleteVent 
+    updateUsername,
+    deleteVent,
+    setAvatarFromGif,
+    removeAvatar,
   } = useUserProfile()
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Profile page - Auth state:', { 
-      isAuthenticated, 
-      profileExists, 
-      authLoading, 
-      userProfile, 
-      loading, 
-      error 
-    })
-  }, [isAuthenticated, profileExists, authLoading, userProfile, loading, error])
 
   // Wait for auth to finish loading
   if (authLoading) {
@@ -171,7 +160,10 @@ export default function Profile() {
       {/* Username Editor */}
       <UsernameEditor
         currentUsername={userProfile.username}
+        avatarUrl={userProfile.avatar_url}
         onUpdateUsername={updateUsername}
+        onSetAvatarFromGif={setAvatarFromGif}
+        onRemoveAvatar={removeAvatar}
       />
 
       {/* User Stats */}

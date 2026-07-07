@@ -67,6 +67,20 @@ export function useUserProfile() {
     await fetchUserProfile()
   }
 
+  const setAvatarFromGif = async (gifId: string) => {
+    if (!user) throw new Error('Not authenticated')
+    const { user: updated } = await api.users.setAvatar(gifId)
+    setUserProfile(updated)
+    await fetchUserProfile()
+  }
+
+  const removeAvatar = async () => {
+    if (!user) throw new Error('Not authenticated')
+    const { user: updated } = await api.users.deleteAvatar()
+    setUserProfile(updated)
+    await fetchUserProfile()
+  }
+
   useEffect(() => {
     fetchUserProfile()
   }, [user, isAuthenticated])
@@ -79,6 +93,8 @@ export function useUserProfile() {
     error,
     updateUsername,
     deleteVent,
+    setAvatarFromGif,
+    removeAvatar,
     refresh: fetchUserProfile,
   }
 }

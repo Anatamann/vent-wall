@@ -6,6 +6,7 @@ import { useVentDetail } from '../hooks/useVentDetail'
 import ReactionButton from '../components/ReactionButton'
 import CommentSection from '../components/CommentSection'
 import LoadingSpinner from '../components/LoadingSpinner'
+import UserAvatar from '../components/UserAvatar'
 
 export default function PostDetail() {
   const { slug } = useParams<{ slug: string }>()
@@ -59,11 +60,11 @@ export default function PostDetail() {
       <article className="card">
         <header className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">
-                {vent.user?.username?.charAt(0).toUpperCase() || 'A'}
-              </span>
-            </div>
+            <UserAvatar
+              username={vent.user?.username || 'Anonymous'}
+              avatarUrl={vent.user?.avatar_url}
+              size="md"
+            />
             <div>
               <p className="font-medium text-gray-900 dark:text-gray-100">
                 {vent.user?.username || 'Anonymous'}

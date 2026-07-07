@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageCircle, Plus } from 'lucide-react'
+import { Image, MessageCircle, Smile } from 'lucide-react'
 import EmojiPicker from './EmojiPicker'
-import type { VentComment } from '../lib/types'
+import GifPicker from './GifPicker'
+import type { CommentPayload, KlipyGifItem, VentComment } from '../lib/types'
 import { MAX_COMMENTS_PER_USER_PER_VENT } from '../lib/constants'
 
 interface CommentSectionProps {
   comments: VentComment[]
   commentsOpen: boolean
   currentUserId?: string
-  onAddComment: (emoji: string) => Promise<void>
+  onAddComment: (payload: CommentPayload) => Promise<void>
   disabled?: boolean
 }
+
+type PickerTab = 'emoji' | 'gif'
 
 export default function CommentSection({
   comments,
@@ -20,7 +23,9 @@ export default function CommentSection({
   onAddComment,
   disabled = false,
 }: CommentSectionProps) {
-  const [showPicker, setShowPicker] = useState(false)
+  const [activeTab, setActiveTab] = useState<PickerTab>('emoji')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showGifPicker, setShowGifPicker] = useState(false)
   const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,32 +35,48 @@ export default function CommentSection({
     : 0
   const atCommentLimit = userCommentCount >= MAX_COMMENTS_PER_USER_PER_VENT
 
-  const handleOpenPicker = (e: React.MouseEvent) => {
+  const handleOpenPicker = (e: React.MouseEvent, tab: PickerTab) => {
     if (disabled || !commentsOpen || atCommentLimit) return
 
+    setActiveTab(tab)
     setError(null)
+
+    if (tab === 'gif') {
+      setShowGifPicker(true)
+      return
+    }
+
     const rect = e.currentTarget.getBoundingClientRect()
     setPickerPosition({
       x: rect.left + rect.width / 2,
       y: rect.top,
     })
-    setShowPicker(true)
+    setShowEmojiPicker(true)
   }
 
-  const handleEmojiSelect = async (emoji: string) => {
+  const submitComment = async (payload: CommentPayload) => {
     if (disabled || !commentsOpen || atCommentLimit) return
 
     try {
       setIsSubmitting(true)
       setError(null)
-      await onAddComment(emoji)
-      setShowPicker(false)
+      await onAddComment(payload)
+      setShowEmojiPicker(false)
+      setShowGifPicker(false)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to add comment'
       setError(message)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleEmojiSelect = async (emoji: string) => {
+    await submitComment({ type: 'emoji', emoji })
+  }
+
+  const handleGifSelect = async (gif: KlipyGifItem) => {
+    await submitComment({ type: 'gif', gif_id: gif.id })
   }
 
   return (
@@ -72,18 +93,32 @@ export default function CommentSection({
         </div>
 
         {commentsOpen && currentUserId && !disabled && (
-          <button
-            onClick={handleOpenPicker}
-            disabled={isSubmitting || atCommentLimit}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              atCommentLimit
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-                : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50'
-            }`}
-          >
-            <Plus className="w-4 h-4" />
-            Add emoji
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => handleOpenPicker(e, 'emoji')}
+              disabled={isSubmitting || atCommentLimit}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                atCommentLimit
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50'
+              }`}
+            >
+              <Smile className="w-4 h-4" />
+              Emoji
+            </button>
+            <button
+              onClick={(e) => handleOpenPicker(e, 'gif')}
+              disabled={isSubmitting || atCommentLimit}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                atCommentLimit
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50'
+              }`}
+            >
+              <Image className="w-4 h-4" />
+              GIF
+            </button>
+          </div>
         )}
       </div>
 
@@ -95,7 +130,7 @@ export default function CommentSection({
 
       {commentsOpen && !currentUserId && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Sign in to leave an emoji comment.
+          Sign in to respond with an emoji or GIF.
         </p>
       )}
 
@@ -112,26 +147,38 @@ export default function CommentSection({
       {comments.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
           {commentsOpen
-            ? 'No comments yet. Be the first to respond with an emoji.'
+            ? 'No comments yet. Be the first to respond with an emoji or GIF.'
             : 'No comments were left on this post.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {comments.map((comment) => (
             <div
               key={comment.id}
-              className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5"
+              className="flex flex-col gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-3"
             >
-              <span className="text-2xl leading-none" aria-hidden="true">
-                {comment.emoji}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
                   {comment.user?.username || 'Anonymous'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </p>
+              </div>
+
+              <div className="flex items-center justify-center min-h-[3rem]">
+                {comment.comment_type === 'gif' && comment.asset?.url ? (
+                  <img
+                    src={comment.asset.url}
+                    alt="GIF comment"
+                    className="max-h-20 max-w-full rounded object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="text-3xl leading-none" aria-hidden="true">
+                    {comment.emoji}
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -139,11 +186,21 @@ export default function CommentSection({
       )}
 
       <EmojiPicker
-        isOpen={showPicker}
-        onClose={() => setShowPicker(false)}
+        isOpen={showEmojiPicker && activeTab === 'emoji'}
+        onClose={() => setShowEmojiPicker(false)}
         onEmojiSelect={handleEmojiSelect}
         position={pickerPosition}
       />
+
+      <GifPicker
+        isOpen={showGifPicker}
+        onClose={() => setShowGifPicker(false)}
+        onGifSelect={handleGifSelect}
+      />
+
+      {isSubmitting && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Posting comment...</p>
+      )}
     </section>
   )
 }

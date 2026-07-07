@@ -1,4 +1,16 @@
-import type { AuthUser, MoodTag, User, Vent, VentComment } from './types'
+import type {
+  AdminOverview,
+  AuthUser,
+  CommentPayload,
+  FeedbackStatus,
+  GifDisclaimer,
+  KlipyGifItem,
+  MoodTag,
+  User,
+  UserFeedback,
+  Vent,
+  VentComment,
+} from './types'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 const TOKEN_KEY = 'ventwall_token'
@@ -8,6 +20,17 @@ const authListeners = new Set<AuthListener>()
 
 function notifyAuthListeners(user: AuthUser | null) {
   authListeners.forEach((listener) => listener(user))
+}
+
+function syncAuthUserAvatar(user: Pick<User, 'id' | 'username' | 'email' | 'is_admin' | 'avatar_url'>) {
+  if (!getToken()) return
+  notifyAuthListeners({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    is_admin: user.is_admin,
+    avatar_url: user.avatar_url,
+  })
 }
 
 export function getToken(): string | null {
@@ -112,7 +135,13 @@ export const api = {
         false
       )
       setToken(data.token)
-      const authUser: AuthUser = { id: data.user.id, username: data.user.username, email: data.user.email }
+      const authUser: AuthUser = {
+        id: data.user.id,
+        username: data.user.username,
+        email: data.user.email,
+        is_admin: data.user.is_admin,
+        avatar_url: data.user.avatar_url,
+      }
       notifyAuthListeners(authUser)
       return data
     },
@@ -127,7 +156,13 @@ export const api = {
         false
       )
       setToken(data.token)
-      const authUser: AuthUser = { id: data.user.id, username: data.user.username, email: data.user.email }
+      const authUser: AuthUser = {
+        id: data.user.id,
+        username: data.user.username,
+        email: data.user.email,
+        is_admin: data.user.is_admin,
+        avatar_url: data.user.avatar_url,
+      }
       notifyAuthListeners(authUser)
       return data
     },
@@ -147,6 +182,8 @@ export const api = {
           id: data.user.id,
           username: data.user.username,
           email: data.user.email,
+          is_admin: data.user.is_admin,
+          avatar_url: data.user.avatar_url,
         }
       } catch {
         return null
@@ -215,11 +252,36 @@ export const api = {
       return request(`/vents/${slug}/comments`, {}, false)
     },
 
-    addComment(slug: string, emoji: string): Promise<{ comment: VentComment }> {
+    addComment(slug: string, payload: CommentPayload): Promise<{ comment: VentComment }> {
       return request(`/vents/${slug}/comments`, {
         method: 'POST',
-        body: JSON.stringify({ emoji }),
+        body: JSON.stringify(payload),
       })
+    },
+  },
+
+  media: {
+    searchGifs(params: {
+      q?: string
+      page?: number
+      per_page?: number
+    } = {}): Promise<{
+      items: KlipyGifItem[]
+      page: number
+      per_page: number
+      has_next: boolean
+      attribution: string
+    }> {
+      const search = new URLSearchParams()
+      if (params.q) search.set('q', params.q)
+      if (params.page) search.set('page', String(params.page))
+      if (params.per_page) search.set('per_page', String(params.per_page))
+      const query = search.toString()
+      return request(`/media/gifs/search${query ? `?${query}` : ''}`)
+    },
+
+    gifDisclaimer(): Promise<GifDisclaimer> {
+      return request('/media/legal/gif-disclaimer', {}, false)
     },
   },
 
@@ -254,6 +316,21 @@ export const api = {
     }> {
       return request('/users/me/post-limits')
     },
+
+    async setAvatar(gifId: string): Promise<{ user: User }> {
+      const data = await request<{ user: User }>('/users/me/avatar', {
+        method: 'POST',
+        body: JSON.stringify({ gif_id: gifId }),
+      })
+      syncAuthUserAvatar(data.user)
+      return data
+    },
+
+    async deleteAvatar(): Promise<{ user: User }> {
+      const data = await request<{ user: User }>('/users/me/avatar', { method: 'DELETE' })
+      syncAuthUserAvatar(data.user)
+      return data
+    },
   },
 
   analytics: {
@@ -268,11 +345,49 @@ export const api = {
     },
   },
 
-  reports: {
-    create(ventId: string, reason: string, details?: string) {
-      return request('/reports', {
+  feedback: {
+    status(): Promise<{ submitted_today: boolean; feedback: UserFeedback | null }> {
+      return request('/feedback/status')
+    },
+
+    submit(payload: { tag_request?: string; message: string }): Promise<{ feedback: UserFeedback }> {
+      return request('/feedback', {
         method: 'POST',
-        body: JSON.stringify({ vent_id: ventId, reason, details }),
+        body: JSON.stringify(payload),
+      })
+    },
+  },
+
+  admin: {
+    overview(): Promise<AdminOverview> {
+      return request('/admin/overview')
+    },
+
+    listFeedback(params: {
+      status?: FeedbackStatus | 'all'
+      page?: number
+      per_page?: number
+    } = {}): Promise<{
+      items: UserFeedback[]
+      page: number
+      per_page: number
+      total: number
+    }> {
+      const search = new URLSearchParams()
+      if (params.status) search.set('status', params.status)
+      if (params.page) search.set('page', String(params.page))
+      if (params.per_page) search.set('per_page', String(params.per_page))
+      const query = search.toString()
+      return request(`/admin/feedback${query ? `?${query}` : ''}`)
+    },
+
+    updateFeedback(
+      id: string,
+      payload: { status?: FeedbackStatus; admin_note?: string }
+    ): Promise<{ feedback: UserFeedback }> {
+      return request(`/admin/feedback/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
       })
     },
   },

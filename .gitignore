@@ -1,5 +1,8 @@
 .env
 .env.local
 server/.env
+server/media/cache/*
+server/media/avatars/*
+!server/media/.gitkeep
 *.sql
 !db/migrations/*.sql

@@ -1,7 +1,15 @@
 import { query } from '../db.js';
-import { fetchCommentsForVent } from './comments.js';
+import { buildAvatarUrl } from './avatar-assets.js';
+import { fetchCommentsForVent, mapCommentRow } from './comments.js';
 import { resolveVentUuid } from './slug.js';
 import { isOnWall } from './wall.js';
+function mapVentUser(row) {
+    return {
+        id: row.user_id,
+        username: row.username,
+        avatar_url: buildAvatarUrl(row.user_id, row.avatar_path, row.avatar_updated_at),
+    };
+}
 export async function fetchVentsWithRelations(options) {
     const { userId, tagIds = [], sortBy = 'newest', timeFilter = 'all', offset = 0, limit = 20, includeExpired = false, } = options;
     const conditions = [];
@@ -44,6 +52,8 @@ export async function fetchVentsWithRelations(options) {
       v.created_at,
       v.expires_at,
       u.username,
+      u.avatar_path,
+      u.avatar_updated_at,
       COALESCE(
         json_agg(DISTINCT jsonb_build_object(
           'id', mt.id,
@@ -68,7 +78,7 @@ export async function fetchVentsWithRelations(options) {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     ${whereClause}
-    GROUP BY v.id, v.slug, u.username
+    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
     ${orderClause}
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `, params);
@@ -80,7 +90,7 @@ export async function fetchVentsWithRelations(options) {
         created_at: row.created_at,
         expires_at: row.expires_at,
         is_on_wall: isOnWall(row.expires_at),
-        user: { id: row.user_id, username: row.username },
+        user: mapVentUser(row),
         mood_tags: row.mood_tags ?? [],
         reactions: row.reactions ?? [],
     }));
@@ -115,6 +125,8 @@ export async function fetchVentById(ventId) {
       v.created_at,
       v.expires_at,
       u.username,
+      u.avatar_path,
+      u.avatar_updated_at,
       COALESCE(
         json_agg(DISTINCT jsonb_build_object(
           'id', mt.id,
@@ -139,7 +151,7 @@ export async function fetchVentById(ventId) {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     WHERE v.id = $1
-    GROUP BY v.id, v.slug, u.username
+    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
     `, [ventId]);
     const row = result.rows[0];
     if (!row)
@@ -154,17 +166,10 @@ export async function fetchVentById(ventId) {
         created_at: row.created_at,
         expires_at: row.expires_at,
         is_on_wall: onWall,
-        user: { id: row.user_id, username: row.username },
+        user: mapVentUser(row),
         mood_tags: row.mood_tags ?? [],
         reactions: row.reactions ?? [],
-        comments: comments.map((c) => ({
-            id: c.id,
-            vent_id: c.vent_id,
-            user_id: c.user_id,
-            emoji: c.emoji,
-            created_at: c.created_at,
-            user: { id: c.user_id, username: c.username },
-        })),
+        comments: comments.map(mapCommentRow),
         comments_open: onWall,
     };
 }

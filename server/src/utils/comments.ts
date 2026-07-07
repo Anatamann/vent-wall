@@ -7,9 +7,48 @@ export interface CommentRow {
   id: string
   vent_id: string
   user_id: string
-  emoji: string
+  comment_type: 'emoji' | 'gif'
+  emoji: string | null
+  asset_id: string | null
   created_at: string
   username: string
+  asset_preview_url: string | null
+  asset_width: number | null
+  asset_height: number | null
+}
+
+export type CommentInput =
+  | { type: 'emoji'; emoji: string }
+  | { type: 'gif'; gif_id: string }
+
+const KLIPY_GIF_ID_REGEX = /^[0-9]{1,20}$/
+
+export function parseCommentInput(body: Record<string, unknown>): CommentInput | null {
+  const type = String(body.type || '').trim()
+
+  if (type === 'gif' || body.gif_id) {
+    const gifId = String(body.gif_id || '').trim()
+    if (!gifId) return null
+    return { type: 'gif', gif_id: gifId }
+  }
+
+  const emoji = String(body.emoji || '').trim()
+  if (!emoji && !type) return null
+  return { type: 'emoji', emoji }
+}
+
+export function validateGifComment(gifId: string): {
+  valid: boolean
+  error?: string
+} {
+  const trimmed = gifId.trim()
+  if (!trimmed) {
+    return { valid: false, error: 'GIF id is required' }
+  }
+  if (!KLIPY_GIF_ID_REGEX.test(trimmed)) {
+    return { valid: false, error: 'Invalid GIF id' }
+  }
+  return { valid: true }
 }
 
 export function validateEmojiComment(emoji: string): {
@@ -29,6 +68,28 @@ export function validateEmojiComment(emoji: string): {
   return { valid: true }
 }
 
+export function mapCommentRow(row: CommentRow) {
+  return {
+    id: row.id,
+    vent_id: row.vent_id,
+    user_id: row.user_id,
+    comment_type: row.comment_type,
+    emoji: row.emoji,
+    created_at: row.created_at,
+    user: { id: row.user_id, username: row.username },
+    asset:
+      row.comment_type === 'gif' && row.asset_id
+        ? {
+            id: row.asset_id,
+            preview_url: row.asset_preview_url,
+            width: row.asset_width,
+            height: row.asset_height,
+            url: `/api/media/assets/${row.asset_id}`,
+          }
+        : undefined,
+  }
+}
+
 export async function fetchCommentsForVent(ventId: string): Promise<CommentRow[]> {
   const result = await query<CommentRow>(
     `
@@ -36,11 +97,17 @@ export async function fetchCommentsForVent(ventId: string): Promise<CommentRow[]
       c.id,
       c.vent_id,
       c.user_id,
+      c.comment_type,
       c.emoji,
+      c.asset_id,
       c.created_at,
-      u.username
+      u.username,
+      a.preview_url AS asset_preview_url,
+      a.width AS asset_width,
+      a.height AS asset_height
     FROM vent_comments c
     JOIN users u ON u.id = c.user_id
+    LEFT JOIN media_assets a ON a.id = c.asset_id
     WHERE c.vent_id = $1
     ORDER BY c.created_at ASC
     `,

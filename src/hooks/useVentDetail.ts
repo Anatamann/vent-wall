@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import type { Vent } from '../lib/types'
+import type { CommentPayload, Vent } from '../lib/types'
 
 export function useVentDetail(ventSlug: string | undefined, currentUserId?: string) {
   const [vent, setVent] = useState<Vent | null>(null)
@@ -78,11 +78,11 @@ export function useVentDetail(ventSlug: string | undefined, currentUserId?: stri
   )
 
   const addComment = useCallback(
-    async (emoji: string) => {
+    async (payload: CommentPayload) => {
       if (!vent) return
 
       try {
-        const result = await api.vents.addComment(vent.slug, emoji)
+        const result = await api.vents.addComment(vent.slug, payload)
         setVent((current) =>
           current
             ? {

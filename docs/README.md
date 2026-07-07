@@ -19,6 +19,8 @@ Vent Wall is an anonymous mood-sharing platform where users can post emotional "
 ## Quick Reference
 
 - **Local setup:** [LOCAL_START_GUIDE.md](./LOCAL_START_GUIDE.md)
+- **Production security:** [PRODUCTION_SECURITY.md](./PRODUCTION_SECURITY.md)
+- **Admin dashboard plan:** [ADMIN_DASHBOARD_PLAN.md](./ADMIN_DASHBOARD_PLAN.md) (decisions locked)
 - **Technology Stack:** React + TypeScript + Vite + Local PostgreSQL + Tailwind CSS
 - **Estimated Timeline:** 3-4 weeks
 - **Total Token Estimate:** 140,000-190,000 tokens

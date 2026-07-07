@@ -4,9 +4,12 @@ import { query } from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { generateUniqueVentSlug, resolveVentUuid } from '../utils/slug.js';
 import { fetchVentsWithRelations, fetchVentByIdentifier } from '../utils/vents.js';
-import { fetchCommentsForVent, validateEmojiComment, ventAcceptsComments, } from '../utils/comments.js';
+import { fetchCommentsForVent, mapCommentRow, parseCommentInput, validateEmojiComment, validateGifComment, ventAcceptsComments, } from '../utils/comments.js';
+import { parseUuidList } from '../utils/validation.js';
+import { ingestKlipyGif } from '../utils/media-assets.js';
+import { isKlipyConfigured } from '../providers/klipy.js';
 import { isOnWall } from '../utils/wall.js';
-import { MAX_COMMENTS_PER_USER_PER_VENT, MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT, } from '../constants.js';
+import { MAX_COMMENTS_PER_USER_PER_VENT, MAX_COMMENTS_PER_VENT, MAX_GIF_COMMENTS_PER_USER_PER_HOUR, MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT, } from '../constants.js';
 const router = Router();
 async function resolveVentIdOr404(identifier, res) {
     const ventId = await resolveVentUuid(identifier);
@@ -22,15 +25,17 @@ const createVentSchema = z.object({
 });
 router.get('/', async (req, res) => {
     try {
-        const tagIds = typeof req.query.tags === 'string'
-            ? req.query.tags.split(',').filter(Boolean)
-            : [];
+        const rawTags = typeof req.query.tags === 'string' ? req.query.tags : '';
+        const tagIds = parseUuidList(rawTags);
+        if (tagIds === null) {
+            return res.status(400).json({ error: 'Invalid tag filter' });
+        }
         const vents = await fetchVentsWithRelations({
             tagIds,
             sortBy: String(req.query.sort || 'newest'),
             timeFilter: String(req.query.time || 'all'),
-            offset: Number(req.query.offset || 0),
-            limit: Math.min(Number(req.query.limit || 20), 50),
+            offset: Math.max(0, Number(req.query.offset || 0)),
+            limit: Math.min(Math.max(1, Number(req.query.limit || 20)), 50),
         });
         return res.json(vents);
     }
@@ -52,14 +57,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
         }
         const comments = vent.is_on_wall ? await fetchCommentsForVent(vent.id) : [];
         return res.json({
-            comments: comments.map((c) => ({
-                id: c.id,
-                vent_id: c.vent_id,
-                user_id: c.user_id,
-                emoji: c.emoji,
-                created_at: c.created_at,
-                user: { id: c.user_id, username: c.username },
-            })),
+            comments: comments.map(mapCommentRow),
             comments_open: vent.is_on_wall,
         });
     }
@@ -69,10 +67,9 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
     }
 });
 router.post('/:id/comments', requireAuth, async (req, res) => {
-    const emoji = String(req.body.emoji || '').trim();
-    const validation = validateEmojiComment(emoji);
-    if (!validation.valid) {
-        return res.status(400).json({ error: validation.error });
+    const parsed = parseCommentInput(req.body);
+    if (!parsed) {
+        return res.status(400).json({ error: 'Invalid comment payload' });
     }
     const userId = req.user.userId;
     try {
@@ -80,7 +77,7 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
         if (!ventId)
             return;
         const ventCheck = await ventAcceptsComments(ventId);
-        if (!ventCheck.accepts) {
+        if (!ventCheck.accepts || !ventCheck.expires_at) {
             return res.status(403).json({
                 error: 'Comments are only available while this post is on the Wall',
             });
@@ -92,16 +89,55 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
                 error: `You can only add up to ${MAX_COMMENTS_PER_USER_PER_VENT} comments per post`,
             });
         }
-        const inserted = await query(`INSERT INTO vent_comments (vent_id, user_id, emoji)
-       VALUES ($1, $2, $3)
-       RETURNING id, vent_id, user_id, emoji, created_at`, [ventId, userId, emoji]);
-        const comment = inserted.rows[0];
-        const userResult = await query('SELECT username FROM users WHERE id = $1', [userId]);
+        const ventCommentCount = await query(`SELECT COUNT(*)::int AS count FROM vent_comments WHERE vent_id = $1`, [ventId]);
+        if ((ventCommentCount.rows[0]?.count ?? 0) >= MAX_COMMENTS_PER_VENT) {
+            return res.status(429).json({
+                error: 'This post has reached its comment limit',
+            });
+        }
+        let assetId = null;
+        let emoji = null;
+        let commentType = 'emoji';
+        if (parsed.type === 'emoji') {
+            const validation = validateEmojiComment(parsed.emoji);
+            if (!validation.valid) {
+                return res.status(400).json({ error: validation.error });
+            }
+            emoji = parsed.emoji;
+        }
+        else {
+            const gifValidation = validateGifComment(parsed.gif_id);
+            if (!gifValidation.valid) {
+                return res.status(400).json({ error: gifValidation.error });
+            }
+            if (!isKlipyConfigured()) {
+                return res.status(503).json({
+                    error: 'GIF comments are not configured. Add KLIPY_API_KEY to server/.env',
+                });
+            }
+            const gifHourlyCount = await query(`SELECT COUNT(*)::int AS count FROM vent_comments
+         WHERE user_id = $1
+           AND comment_type = 'gif'
+           AND created_at > now() - INTERVAL '1 hour'`, [userId]);
+            if ((gifHourlyCount.rows[0]?.count ?? 0) >= MAX_GIF_COMMENTS_PER_USER_PER_HOUR) {
+                return res.status(429).json({
+                    error: 'GIF comment limit reached. Please try again later.',
+                });
+            }
+            const asset = await ingestKlipyGif({
+                externalId: parsed.gif_id,
+                expiresAt: new Date(ventCheck.expires_at),
+            });
+            assetId = asset.id;
+            commentType = 'gif';
+        }
+        const inserted = await query(`INSERT INTO vent_comments (vent_id, user_id, comment_type, emoji, asset_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, vent_id, user_id, comment_type, emoji, asset_id, created_at`, [ventId, userId, commentType, emoji, assetId]);
+        const comments = await fetchCommentsForVent(ventId);
+        const created = comments.find((c) => c.id === inserted.rows[0].id);
         return res.status(201).json({
-            comment: {
-                ...comment,
-                user: { id: userId, username: userResult.rows[0]?.username },
-            },
+            comment: created ? mapCommentRow(created) : inserted.rows[0],
         });
     }
     catch (err) {
@@ -157,6 +193,11 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, $2, $3, now() + INTERVAL '24 hours')
        RETURNING id, slug, user_id, content, created_at, expires_at`, [userId, content.trim(), slug]);
         const vent = ventResult.rows[0];
+        const tagCheck = await pgClient.query('SELECT COUNT(*)::int AS count FROM mood_tags WHERE id = ANY($1::uuid[])', [tag_ids]);
+        if ((tagCheck.rows[0]?.count ?? 0) !== tag_ids.length) {
+            await pgClient.query('ROLLBACK');
+            return res.status(400).json({ error: 'One or more mood tags are invalid' });
+        }
         for (const tagId of tag_ids) {
             await pgClient.query('INSERT INTO vent_tags (vent_id, tag_id) VALUES ($1, $2)', [vent.id, tagId]);
         }
@@ -194,14 +235,21 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 router.post('/:id/reactions', requireAuth, async (req, res) => {
     const emoji = String(req.body.emoji || '').trim();
-    if (!emoji) {
-        return res.status(400).json({ error: 'Emoji is required' });
+    const emojiValidation = validateEmojiComment(emoji);
+    if (!emojiValidation.valid) {
+        return res.status(400).json({ error: emojiValidation.error });
     }
     const userId = req.user.userId;
     try {
         const ventId = await resolveVentIdOr404(req.params.id, res);
         if (!ventId)
             return;
+        const ventCheck = await ventAcceptsComments(ventId);
+        if (!ventCheck.accepts) {
+            return res.status(403).json({
+                error: 'Reactions are only available while this post is on the Wall',
+            });
+        }
         const existing = await query('SELECT id FROM reactions WHERE vent_id = $1 AND user_id = $2 AND emoji = $3', [ventId, userId, emoji]);
         if (existing.rowCount) {
             await query('DELETE FROM reactions WHERE id = $1', [existing.rows[0].id]);

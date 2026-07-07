@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { MessageSquare, User, LogOut, LogIn } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, User, LogOut, LogIn } from 'lucide-react'
+import FloatingFeedbackButton from './FloatingFeedbackButton'
+import FeedbackModal from './FeedbackModal'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -10,6 +12,18 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, signOut, isAuthenticated, profileExists, loading } = useAuth()
   const location = useLocation()
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
+
+  const showFeedbackFab =
+    isAuthenticated && location.pathname !== '/auth' && location.pathname !== '/admin'
+
+  const handleFeedbackClick = () => {
+    if (!isAuthenticated) {
+      window.location.href = '/auth'
+      return
+    }
+    setIsFeedbackOpen(true)
+  }
 
   const handleProfileClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
@@ -42,6 +56,19 @@ export default function Layout({ children }: LayoutProps) {
             <nav className="flex items-center space-x-4">
               {isAuthenticated ? (
                 <>
+                  {user?.is_admin && (
+                    <Link
+                      to="/admin"
+                      className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        location.pathname === '/admin'
+                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
                   <Link
                     to="/profile"
                     onClick={handleProfileClick}
@@ -80,6 +107,19 @@ export default function Layout({ children }: LayoutProps) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+
+      {showFeedbackFab && (
+        <>
+          <FloatingFeedbackButton
+            onClick={handleFeedbackClick}
+            stacked={location.pathname === '/'}
+          />
+          <FeedbackModal
+            isOpen={isFeedbackOpen}
+            onClose={() => setIsFeedbackOpen(false)}
+          />
+        </>
+      )}
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto transition-colors">

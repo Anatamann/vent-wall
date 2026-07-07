@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Profile from './pages/Profile'
 import PostDetail from './pages/PostDetail'
 import Auth from './pages/Auth'
+import AdminDashboard from './pages/AdminDashboard'
 import LoadingSpinner from './components/LoadingSpinner'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* Catch all route - redirect to home */}
           <Route path="*" element={<Home />} />
         </Routes>

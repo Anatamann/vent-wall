@@ -13,13 +13,23 @@ import {
   normalizeUsername,
   validateUsernameFormat,
 } from '../utils/username.js'
+import { checkLoginAllowed, recordLoginAttempt } from '../utils/login-guard.js'
+import { isAdminUser } from '../config/admin.js'
+import { enrichUser, USER_PUBLIC_FIELDS, type UserRow } from '../utils/user-profile.js'
 
 const router = Router()
 
 const registerSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z
+    .string()
+    .min(8)
+    .max(128)
+    .regex(
+      /^(?=.*[A-Za-z])(?=.*\d).+$/,
+      'Password must include at least one letter and one number'
+    ),
 })
 
 const loginSchema = z.object({
@@ -74,7 +84,7 @@ router.post('/register', async (req, res) => {
 
     if (await isUsernameTaken(username)) {
       await recordRegistrationAttempt(ipHash, false)
-      return res.status(409).json({ error: 'This username is already taken' })
+      return res.status(409).json({ error: 'Username or email is already in use' })
     }
 
     const emailTaken = await query(
@@ -83,7 +93,7 @@ router.post('/register', async (req, res) => {
     )
     if (emailTaken.rowCount) {
       await recordRegistrationAttempt(ipHash, false)
-      return res.status(409).json({ error: 'This email is already registered' })
+      return res.status(409).json({ error: 'Username or email is already in use' })
     }
 
     const passwordHash = await bcrypt.hash(password, 12)
@@ -99,7 +109,10 @@ router.post('/register', async (req, res) => {
     const user = result.rows[0]
     const token = signToken({ userId: user.id, username: user.username })
 
-    return res.status(201).json({ token, user })
+    return res.status(201).json({
+      token,
+      user: { ...user, is_admin: isAdminUser(user.id) },
+    })
   } catch (err: unknown) {
     if (
       typeof err === 'object' &&
@@ -108,7 +121,7 @@ router.post('/register', async (req, res) => {
       err.code === '23505'
     ) {
       await recordRegistrationAttempt(ipHash, false)
-      return res.status(409).json({ error: 'This username is already taken' })
+      return res.status(409).json({ error: 'Username or email is already in use' })
     }
     console.error('Register error:', err)
     return res.status(500).json({ error: 'Failed to create account' })
@@ -122,8 +135,14 @@ router.post('/login', async (req, res) => {
   }
 
   const { username, password } = parsed.data
+  const ipHash = hashClientIp(req)
 
   try {
+    const loginGuard = await checkLoginAllowed(ipHash, username)
+    if (!loginGuard.allowed) {
+      return res.status(429).json({ error: loginGuard.reason })
+    }
+
     const result = await query(
       `SELECT id, username, email, password_hash, created_at, last_post_date, post_count_today
        FROM users WHERE LOWER(username) = LOWER($1)`,
@@ -132,18 +151,25 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0]
     if (!user) {
+      await recordLoginAttempt(ipHash, username, false)
       return res.status(401).json({ error: 'Invalid username or password' })
     }
 
     const valid = await bcrypt.compare(password, user.password_hash)
     if (!valid) {
+      await recordLoginAttempt(ipHash, username, false)
       return res.status(401).json({ error: 'Invalid username or password' })
     }
+
+    await recordLoginAttempt(ipHash, username, true)
 
     const { password_hash: _, ...safeUser } = user
     const token = signToken({ userId: user.id, username: user.username })
 
-    return res.json({ token, user: safeUser })
+    return res.json({
+      token,
+      user: { ...safeUser, is_admin: isAdminUser(user.id) },
+    })
   } catch (err) {
     console.error('Login error:', err)
     return res.status(500).json({ error: 'Failed to sign in' })
@@ -152,9 +178,8 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const result = await query(
-      `SELECT id, username, email, created_at, last_post_date, post_count_today
-       FROM users WHERE id = $1`,
+    const result = await query<UserRow>(
+      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = $1`,
       [req.user!.userId]
     )
 
@@ -163,7 +188,12 @@ router.get('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    return res.json({ user })
+    return res.json({
+      user: {
+        ...enrichUser(user),
+        is_admin: isAdminUser(user.id),
+      },
+    })
   } catch (err) {
     console.error('Me error:', err)
     return res.status(500).json({ error: 'Failed to fetch user' })

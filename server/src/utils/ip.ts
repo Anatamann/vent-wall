@@ -1,12 +1,17 @@
 import crypto from 'crypto'
 import type { Request } from 'express'
 
+import { getJwtSecret } from '../config/env.js'
+
 function getIpHashSecret(): string {
-  const secret = process.env.IP_HASH_SECRET || process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('IP_HASH_SECRET or JWT_SECRET must be set')
+  const dedicated = process.env.IP_HASH_SECRET
+  if (dedicated) return dedicated
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('IP_HASH_SECRET must be set in production')
   }
-  return secret
+
+  return getJwtSecret()
 }
 
 export function getClientIp(req: Request): string {

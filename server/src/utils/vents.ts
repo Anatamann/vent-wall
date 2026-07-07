@@ -1,7 +1,21 @@
 import { query } from '../db.js'
-import { fetchCommentsForVent } from './comments.js'
+import { buildAvatarUrl } from './avatar-assets.js'
+import { fetchCommentsForVent, mapCommentRow } from './comments.js'
 import { resolveVentUuid } from './slug.js'
 import { isOnWall } from './wall.js'
+
+function mapVentUser(row: {
+  user_id: string
+  username: string
+  avatar_path?: string | null
+  avatar_updated_at?: string | null
+}) {
+  return {
+    id: row.user_id,
+    username: row.username,
+    avatar_url: buildAvatarUrl(row.user_id, row.avatar_path, row.avatar_updated_at),
+  }
+}
 
 export interface VentRow {
   id: string
@@ -81,6 +95,8 @@ export async function fetchVentsWithRelations(options: {
     created_at: string
     expires_at: string
     username: string
+    avatar_path: string | null
+    avatar_updated_at: string | null
     mood_tags: VentRow['mood_tags']
     reactions: VentRow['reactions']
   }>(
@@ -93,6 +109,8 @@ export async function fetchVentsWithRelations(options: {
       v.created_at,
       v.expires_at,
       u.username,
+      u.avatar_path,
+      u.avatar_updated_at,
       COALESCE(
         json_agg(DISTINCT jsonb_build_object(
           'id', mt.id,
@@ -117,7 +135,7 @@ export async function fetchVentsWithRelations(options: {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     ${whereClause}
-    GROUP BY v.id, v.slug, u.username
+    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
     ${orderClause}
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `,
@@ -132,7 +150,7 @@ export async function fetchVentsWithRelations(options: {
     created_at: row.created_at,
     expires_at: row.expires_at,
     is_on_wall: isOnWall(row.expires_at),
-    user: { id: row.user_id, username: row.username },
+    user: mapVentUser(row),
     mood_tags: row.mood_tags ?? [],
     reactions: row.reactions ?? [],
   }))
@@ -169,6 +187,8 @@ export async function fetchVentById(ventId: string) {
     created_at: string
     expires_at: string
     username: string
+    avatar_path: string | null
+    avatar_updated_at: string | null
     mood_tags: VentRow['mood_tags']
     reactions: VentRow['reactions']
   }>(
@@ -181,6 +201,8 @@ export async function fetchVentById(ventId: string) {
       v.created_at,
       v.expires_at,
       u.username,
+      u.avatar_path,
+      u.avatar_updated_at,
       COALESCE(
         json_agg(DISTINCT jsonb_build_object(
           'id', mt.id,
@@ -205,7 +227,7 @@ export async function fetchVentById(ventId: string) {
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     WHERE v.id = $1
-    GROUP BY v.id, v.slug, u.username
+    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
     `,
     [ventId]
   )
@@ -224,17 +246,10 @@ export async function fetchVentById(ventId: string) {
     created_at: row.created_at,
     expires_at: row.expires_at,
     is_on_wall: onWall,
-    user: { id: row.user_id, username: row.username },
+    user: mapVentUser(row),
     mood_tags: row.mood_tags ?? [],
     reactions: row.reactions ?? [],
-    comments: comments.map((c) => ({
-      id: c.id,
-      vent_id: c.vent_id,
-      user_id: c.user_id,
-      emoji: c.emoji,
-      created_at: c.created_at,
-      user: { id: c.user_id, username: c.username },
-    })),
+    comments: comments.map(mapCommentRow),
     comments_open: onWall,
   }
 }

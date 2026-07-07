@@ -1,10 +1,23 @@
 import { Router } from 'express'
+import { createReadStream } from 'fs'
+import fs from 'fs/promises'
+import { pipeline } from 'stream/promises'
 import { z } from 'zod'
 import { query } from '../db.js'
 import { requireAuth } from '../middleware/auth.js'
 import { fetchVentsWithRelations } from '../utils/vents.js'
 import { MAX_POSTS_PER_DAY } from '../constants.js'
 import { isUsernameTaken, normalizeUsername, validateUsernameFormat } from '../utils/username.js'
+import { validateGifComment } from '../utils/comments.js'
+import { isKlipyConfigured } from '../providers/klipy.js'
+import {
+  AvatarProcessingError,
+  deleteUserAvatarFiles,
+  setUserAvatarFromKlipy,
+} from '../utils/avatar-assets.js'
+import { resolveMediaAbsolutePath } from '../utils/media-assets.js'
+import { enrichUser, USER_PUBLIC_FIELDS, type UserRow } from '../utils/user-profile.js'
+import { isLooseUuid } from '../utils/validation.js'
 
 const router = Router()
 
@@ -12,13 +25,45 @@ const usernameSchema = z.object({
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
 })
 
+const avatarSchema = z.object({
+  gif_id: z.string().trim().min(1),
+})
+
+router.get('/avatars/:userId', async (req, res) => {
+  if (!isLooseUuid(req.params.userId)) {
+    return res.status(404).json({ error: 'Avatar not found' })
+  }
+
+  try {
+    const result = await query<{ avatar_path: string | null; avatar_mime_type: string | null }>(
+      'SELECT avatar_path, avatar_mime_type FROM users WHERE id = $1',
+      [req.params.userId]
+    )
+
+    const user = result.rows[0]
+    if (!user?.avatar_path) {
+      return res.status(404).json({ error: 'Avatar not found' })
+    }
+
+    const absolutePath = resolveMediaAbsolutePath(user.avatar_path)
+    await fs.access(absolutePath)
+
+    res.setHeader('Content-Type', user.avatar_mime_type || 'image/gif')
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+
+    await pipeline(createReadStream(absolutePath), res)
+  } catch {
+    return res.status(404).json({ error: 'Avatar not found' })
+  }
+})
+
 router.get('/me/profile', requireAuth, async (req, res) => {
   const userId = req.user!.userId
 
   try {
-    const profileResult = await query(
-      `SELECT id, username, email, created_at, last_post_date, post_count_today
-       FROM users WHERE id = $1`,
+    const profileResult = await query<UserRow>(
+      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = $1`,
       [userId]
     )
 
@@ -72,13 +117,90 @@ router.get('/me/profile', requireAuth, async (req, res) => {
     }
 
     return res.json({
-      profile,
+      profile: enrichUser(profile),
       vents: userVents,
       stats,
     })
   } catch (err) {
     console.error('Profile error:', err)
     return res.status(500).json({ error: 'Failed to fetch profile' })
+  }
+})
+
+router.post('/me/avatar', requireAuth, async (req, res) => {
+  const parsed = avatarSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'gif_id is required' })
+  }
+
+  const gifValidation = validateGifComment(parsed.data.gif_id)
+  if (!gifValidation.valid) {
+    return res.status(400).json({ error: gifValidation.error })
+  }
+
+  if (!isKlipyConfigured()) {
+    return res.status(503).json({
+      error: 'GIF profile pictures are not configured. Add KLIPY_API_KEY to server/.env',
+    })
+  }
+
+  const userId = req.user!.userId
+
+  try {
+    const saved = await setUserAvatarFromKlipy(userId, parsed.data.gif_id)
+
+    const result = await query<UserRow>(
+      `UPDATE users
+       SET avatar_path = $1,
+           avatar_mime_type = $2,
+           avatar_klipy_id = $3,
+           avatar_updated_at = now()
+       WHERE id = $4
+       RETURNING ${USER_PUBLIC_FIELDS}`,
+      [saved.relativePath, saved.mimeType, saved.klipyId, userId]
+    )
+
+    const user = result.rows[0]
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    return res.json({ user: enrichUser(user) })
+  } catch (err) {
+    if (err instanceof AvatarProcessingError) {
+      return res.status(400).json({ error: err.message })
+    }
+    console.error('Avatar set error:', err)
+    return res.status(500).json({ error: 'Failed to set profile picture' })
+  }
+})
+
+router.delete('/me/avatar', requireAuth, async (req, res) => {
+  const userId = req.user!.userId
+
+  try {
+    await deleteUserAvatarFiles(userId)
+
+    const result = await query<UserRow>(
+      `UPDATE users
+       SET avatar_path = NULL,
+           avatar_mime_type = NULL,
+           avatar_klipy_id = NULL,
+           avatar_updated_at = NULL
+       WHERE id = $1
+       RETURNING ${USER_PUBLIC_FIELDS}`,
+      [userId]
+    )
+
+    const user = result.rows[0]
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    return res.json({ user: enrichUser(user) })
+  } catch (err) {
+    console.error('Avatar delete error:', err)
+    return res.status(500).json({ error: 'Failed to remove profile picture' })
   }
 })
 
@@ -100,13 +222,13 @@ router.patch('/me/username', requireAuth, async (req, res) => {
       return res.status(409).json({ error: 'This username is already taken' })
     }
 
-    const result = await query(
+    const result = await query<UserRow>(
       `UPDATE users SET username = $1 WHERE id = $2
-       RETURNING id, username, email, created_at, last_post_date, post_count_today`,
+       RETURNING ${USER_PUBLIC_FIELDS}`,
       [username, req.user!.userId]
     )
 
-    return res.json({ user: result.rows[0] })
+    return res.json({ user: enrichUser(result.rows[0]) })
   } catch (err) {
     console.error('Username update error:', err)
     return res.status(500).json({ error: 'Failed to update username' })

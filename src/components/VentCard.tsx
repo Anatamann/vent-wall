@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { MessageCircle } from 'lucide-react'
 import { truncateVentContent } from '../lib/format'
 import type { Vent } from '../lib/types'
+import UserAvatar from './UserAvatar'
 
 interface VentCardProps {
   vent: Vent
@@ -51,11 +52,11 @@ export default function VentCard({ vent }: VentCardProps) {
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">
-              {vent.user?.username?.charAt(0).toUpperCase() || 'A'}
-            </span>
-          </div>
+          <UserAvatar
+            username={vent.user?.username || 'Anonymous'}
+            avatarUrl={vent.user?.avatar_url}
+            size="sm"
+          />
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {vent.user?.username || 'Anonymous'}
