@@ -23,7 +23,9 @@ export function validateEnv() {
         throw new Error('IP_HASH_SECRET must be a strong random string (32+ chars) in production');
     }
     const origin = process.env.CLIENT_ORIGIN;
-    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    const allowLocalhost = process.env.ALLOW_LOCALHOST_CORS === 'true';
+    const isLocalOrigin = !origin || origin.includes('localhost') || origin.includes('127.0.0.1');
+    if (!origin || (!allowLocalhost && isLocalOrigin)) {
         throw new Error('CLIENT_ORIGIN must be set to your production frontend URL');
     }
 }

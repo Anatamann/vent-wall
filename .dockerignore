@@ -1,0 +1,14 @@
+node_modules
+dist
+server/node_modules
+server/dist
+server/media/cache
+server/media/avatars
+.git
+.env
+.env.local
+server/.env
+*.md
+.vscode
+.idea
+coverage

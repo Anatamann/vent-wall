@@ -33,7 +33,11 @@ export function validateEnv(): void {
   }
 
   const origin = process.env.CLIENT_ORIGIN
-  if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+  const allowLocalhost = process.env.ALLOW_LOCALHOST_CORS === 'true'
+  const isLocalOrigin =
+    !origin || origin.includes('localhost') || origin.includes('127.0.0.1')
+
+  if (!origin || (!allowLocalhost && isLocalOrigin)) {
     throw new Error('CLIENT_ORIGIN must be set to your production frontend URL')
   }
 }
