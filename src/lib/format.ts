@@ -5,6 +5,9 @@ export function truncateVentContent(
   maxLength = VENT_CARD_PREVIEW_LENGTH
 ): { preview: string; isTruncated: boolean } {
   const trimmed = content.trim()
+  if (!trimmed) {
+    return { preview: '', isTruncated: false }
+  }
   if (trimmed.length <= maxLength) {
     return { preview: trimmed, isTruncated: false }
   }

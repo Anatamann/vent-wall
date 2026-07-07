@@ -20,6 +20,7 @@ export default function Profile() {
     deleteVent,
     setAvatarFromGif,
     removeAvatar,
+    updateStatus,
   } = useUserProfile()
 
   // Wait for auth to finish loading
@@ -160,8 +161,10 @@ export default function Profile() {
       {/* Username Editor */}
       <UsernameEditor
         currentUsername={userProfile.username}
+        currentStatus={userProfile.status}
         avatarUrl={userProfile.avatar_url}
         onUpdateUsername={updateUsername}
+        onUpdateStatus={updateStatus}
         onSetAvatarFromGif={setAvatarFromGif}
         onRemoveAvatar={removeAvatar}
       />

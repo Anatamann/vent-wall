@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { MessageCircle } from 'lucide-react'
-import { truncateVentContent } from '../lib/format'
 import type { Vent } from '../lib/types'
 import UserAvatar from './UserAvatar'
+import UserNameWithStatus from './UserNameWithStatus'
+import VentContentDisplay from './VentContentDisplay'
 
 interface VentCardProps {
   vent: Vent
@@ -14,7 +15,6 @@ export default function VentCard({ vent }: VentCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
-  const { preview, isTruncated } = truncateVentContent(vent.content)
   const reactionCount = vent.reactions?.length || 0
 
   useEffect(() => {
@@ -50,31 +50,28 @@ export default function VentCard({ vent }: VentCardProps) {
         isVisible ? 'vent-card-visible' : ''
       }`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center space-x-2 min-w-0">
           <UserAvatar
             username={vent.user?.username || 'Anonymous'}
             avatarUrl={vent.user?.avatar_url}
             size="sm"
           />
-          <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {vent.user?.username || 'Anonymous'}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{timeAgo}</p>
-          </div>
+          <UserNameWithStatus
+            username={vent.user?.username || 'Anonymous'}
+            status={vent.user?.status}
+          />
         </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{timeAgo}</p>
       </div>
 
       <div className="mb-4 flex-grow">
-        <p className="text-gray-800 dark:text-gray-200 leading-relaxed line-clamp-3">
-          {preview}
-        </p>
-        {isTruncated && (
-          <p className="text-sm text-primary-600 dark:text-primary-400 mt-2 font-medium">
-            Read full post →
-          </p>
-        )}
+        <VentContentDisplay
+          content={vent.content}
+          asset={vent.asset}
+          compact
+          showReadMore
+        />
       </div>
 
       {vent.mood_tags && vent.mood_tags.length > 0 && (

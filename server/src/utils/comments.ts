@@ -12,6 +12,7 @@ export interface CommentRow {
   asset_id: string | null
   created_at: string
   username: string
+  status: string | null
   asset_preview_url: string | null
   asset_width: number | null
   asset_height: number | null
@@ -76,7 +77,7 @@ export function mapCommentRow(row: CommentRow) {
     comment_type: row.comment_type,
     emoji: row.emoji,
     created_at: row.created_at,
-    user: { id: row.user_id, username: row.username },
+    user: { id: row.user_id, username: row.username, status: row.status ?? null },
     asset:
       row.comment_type === 'gif' && row.asset_id
         ? {
@@ -102,6 +103,7 @@ export async function fetchCommentsForVent(ventId: string): Promise<CommentRow[]
       c.asset_id,
       c.created_at,
       u.username,
+      u.status,
       a.preview_url AS asset_preview_url,
       a.width AS asset_width,
       a.height AS asset_height

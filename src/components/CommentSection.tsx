@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Image, MessageCircle, Smile } from 'lucide-react'
 import EmojiPicker from './EmojiPicker'
 import GifPicker from './GifPicker'
+import UserNameWithStatus from './UserNameWithStatus'
 import type { CommentPayload, KlipyGifItem, VentComment } from '../lib/types'
 import { MAX_COMMENTS_PER_USER_PER_VENT } from '../lib/constants'
 
@@ -157,11 +158,12 @@ export default function CommentSection({
               key={comment.id}
               className="flex flex-col gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-3"
             >
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
-                  {comment.user?.username || 'Anonymous'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <div className="flex items-start justify-between gap-2">
+                <UserNameWithStatus
+                  username={comment.user?.username || 'Anonymous'}
+                  status={comment.user?.status}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </p>
               </div>

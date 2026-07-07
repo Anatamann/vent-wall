@@ -9,5 +9,5 @@ export function enrichUser(user) {
 }
 export const USER_PUBLIC_FIELDS = `
   id, username, email, created_at, last_post_date, post_count_today,
-  avatar_path, avatar_mime_type, avatar_updated_at
+  avatar_path, avatar_mime_type, avatar_updated_at, status
 `;

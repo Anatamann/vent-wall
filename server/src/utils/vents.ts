@@ -7,15 +7,75 @@ import { isOnWall } from './wall.js'
 function mapVentUser(row: {
   user_id: string
   username: string
+  status?: string | null
   avatar_path?: string | null
   avatar_updated_at?: string | null
 }) {
   return {
     id: row.user_id,
     username: row.username,
+    status: row.status ?? null,
     avatar_url: buildAvatarUrl(row.user_id, row.avatar_path, row.avatar_updated_at),
   }
 }
+
+function mapVentAsset(row: {
+  asset_id: string | null
+  asset_preview_url?: string | null
+  asset_width?: number | null
+  asset_height?: number | null
+}) {
+  if (!row.asset_id) return undefined
+
+  return {
+    id: row.asset_id,
+    preview_url: row.asset_preview_url ?? null,
+    width: row.asset_width ?? null,
+    height: row.asset_height ?? null,
+    url: `/api/media/assets/${row.asset_id}`,
+  }
+}
+
+const VENT_SELECT_FIELDS = `
+  v.id,
+  v.slug,
+  v.user_id,
+  v.content,
+  v.created_at,
+  v.expires_at,
+  v.asset_id,
+  u.username,
+  u.status,
+  u.avatar_path,
+  u.avatar_updated_at,
+  ma.preview_url AS asset_preview_url,
+  ma.width AS asset_width,
+  ma.height AS asset_height,
+  COALESCE(
+    json_agg(DISTINCT jsonb_build_object(
+      'id', mt.id,
+      'name', mt.name,
+      'color', mt.color,
+      'emoji', mt.emoji
+    )) FILTER (WHERE mt.id IS NOT NULL),
+    '[]'
+  ) AS mood_tags,
+  COALESCE(
+    json_agg(DISTINCT jsonb_build_object(
+      'id', r.id,
+      'emoji', r.emoji,
+      'user_id', r.user_id,
+      'created_at', r.created_at
+    )) FILTER (WHERE r.id IS NOT NULL),
+    '[]'
+  ) AS reactions
+`
+
+const VENT_GROUP_BY = `
+  v.id, v.slug, v.user_id, v.content, v.created_at, v.expires_at, v.asset_id,
+  u.username, u.status, u.avatar_path, u.avatar_updated_at,
+  ma.preview_url, ma.width, ma.height
+`
 
 export interface VentRow {
   id: string
@@ -94,7 +154,12 @@ export async function fetchVentsWithRelations(options: {
     content: string
     created_at: string
     expires_at: string
+    asset_id: string | null
+    asset_preview_url: string | null
+    asset_width: number | null
+    asset_height: number | null
     username: string
+    status: string | null
     avatar_path: string | null
     avatar_updated_at: string | null
     mood_tags: VentRow['mood_tags']
@@ -102,40 +167,15 @@ export async function fetchVentsWithRelations(options: {
   }>(
     `
     SELECT
-      v.id,
-      v.slug,
-      v.user_id,
-      v.content,
-      v.created_at,
-      v.expires_at,
-      u.username,
-      u.avatar_path,
-      u.avatar_updated_at,
-      COALESCE(
-        json_agg(DISTINCT jsonb_build_object(
-          'id', mt.id,
-          'name', mt.name,
-          'color', mt.color,
-          'emoji', mt.emoji
-        )) FILTER (WHERE mt.id IS NOT NULL),
-        '[]'
-      ) AS mood_tags,
-      COALESCE(
-        json_agg(DISTINCT jsonb_build_object(
-          'id', r.id,
-          'emoji', r.emoji,
-          'user_id', r.user_id,
-          'created_at', r.created_at
-        )) FILTER (WHERE r.id IS NOT NULL),
-        '[]'
-      ) AS reactions
+      ${VENT_SELECT_FIELDS}
     FROM vents v
     JOIN users u ON u.id = v.user_id
+    LEFT JOIN media_assets ma ON ma.id = v.asset_id
     LEFT JOIN vent_tags vt ON vt.vent_id = v.id
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     ${whereClause}
-    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
+    GROUP BY ${VENT_GROUP_BY}
     ${orderClause}
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `,
@@ -151,6 +191,7 @@ export async function fetchVentsWithRelations(options: {
     expires_at: row.expires_at,
     is_on_wall: isOnWall(row.expires_at),
     user: mapVentUser(row),
+    asset: mapVentAsset(row),
     mood_tags: row.mood_tags ?? [],
     reactions: row.reactions ?? [],
   }))
@@ -186,7 +227,12 @@ export async function fetchVentById(ventId: string) {
     content: string
     created_at: string
     expires_at: string
+    asset_id: string | null
+    asset_preview_url: string | null
+    asset_width: number | null
+    asset_height: number | null
     username: string
+    status: string | null
     avatar_path: string | null
     avatar_updated_at: string | null
     mood_tags: VentRow['mood_tags']
@@ -194,40 +240,15 @@ export async function fetchVentById(ventId: string) {
   }>(
     `
     SELECT
-      v.id,
-      v.slug,
-      v.user_id,
-      v.content,
-      v.created_at,
-      v.expires_at,
-      u.username,
-      u.avatar_path,
-      u.avatar_updated_at,
-      COALESCE(
-        json_agg(DISTINCT jsonb_build_object(
-          'id', mt.id,
-          'name', mt.name,
-          'color', mt.color,
-          'emoji', mt.emoji
-        )) FILTER (WHERE mt.id IS NOT NULL),
-        '[]'
-      ) AS mood_tags,
-      COALESCE(
-        json_agg(DISTINCT jsonb_build_object(
-          'id', r.id,
-          'emoji', r.emoji,
-          'user_id', r.user_id,
-          'created_at', r.created_at
-        )) FILTER (WHERE r.id IS NOT NULL),
-        '[]'
-      ) AS reactions
+      ${VENT_SELECT_FIELDS}
     FROM vents v
     JOIN users u ON u.id = v.user_id
+    LEFT JOIN media_assets ma ON ma.id = v.asset_id
     LEFT JOIN vent_tags vt ON vt.vent_id = v.id
     LEFT JOIN mood_tags mt ON mt.id = vt.tag_id
     LEFT JOIN reactions r ON r.vent_id = v.id
     WHERE v.id = $1
-    GROUP BY v.id, v.slug, u.username, u.avatar_path, u.avatar_updated_at
+    GROUP BY ${VENT_GROUP_BY}
     `,
     [ventId]
   )
@@ -247,6 +268,7 @@ export async function fetchVentById(ventId: string) {
     expires_at: row.expires_at,
     is_on_wall: onWall,
     user: mapVentUser(row),
+    asset: mapVentAsset(row),
     mood_tags: row.mood_tags ?? [],
     reactions: row.reactions ?? [],
     comments: comments.map(mapCommentRow),

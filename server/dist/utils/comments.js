@@ -46,7 +46,7 @@ export function mapCommentRow(row) {
         comment_type: row.comment_type,
         emoji: row.emoji,
         created_at: row.created_at,
-        user: { id: row.user_id, username: row.username },
+        user: { id: row.user_id, username: row.username, status: row.status ?? null },
         asset: row.comment_type === 'gif' && row.asset_id
             ? {
                 id: row.asset_id,
@@ -69,6 +69,7 @@ export async function fetchCommentsForVent(ventId) {
       c.asset_id,
       c.created_at,
       u.username,
+      u.status,
       a.preview_url AS asset_preview_url,
       a.width AS asset_width,
       a.height AS asset_height

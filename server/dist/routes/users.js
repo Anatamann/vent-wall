@@ -14,12 +14,16 @@ import { AvatarProcessingError, deleteUserAvatarFiles, setUserAvatarFromKlipy, }
 import { resolveMediaAbsolutePath } from '../utils/media-assets.js';
 import { enrichUser, USER_PUBLIC_FIELDS } from '../utils/user-profile.js';
 import { isLooseUuid } from '../utils/validation.js';
+import { normalizeStatus, validateStatusFormat } from '../utils/status.js';
 const router = Router();
 const usernameSchema = z.object({
     username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
 });
 const avatarSchema = z.object({
     gif_id: z.string().trim().min(1),
+});
+const statusSchema = z.object({
+    status: z.string().max(30),
 });
 router.get('/avatars/:userId', async (req, res) => {
     if (!isLooseUuid(req.params.userId)) {
@@ -125,6 +129,30 @@ router.post('/me/avatar', requireAuth, async (req, res) => {
         }
         console.error('Avatar set error:', err);
         return res.status(500).json({ error: 'Failed to set profile picture' });
+    }
+});
+router.patch('/me/status', requireAuth, async (req, res) => {
+    const parsed = statusSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    const status = normalizeStatus(parsed.data.status);
+    const format = validateStatusFormat(status);
+    if (!format.valid) {
+        return res.status(400).json({ error: format.error });
+    }
+    try {
+        const result = await query(`UPDATE users SET status = $1 WHERE id = $2
+       RETURNING ${USER_PUBLIC_FIELDS}`, [status || null, req.user.userId]);
+        const user = result.rows[0];
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        return res.json({ user: enrichUser(user) });
+    }
+    catch (err) {
+        console.error('Status update error:', err);
+        return res.status(500).json({ error: 'Failed to update status' });
     }
 });
 router.delete('/me/avatar', requireAuth, async (req, res) => {

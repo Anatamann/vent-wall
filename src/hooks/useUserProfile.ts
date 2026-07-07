@@ -81,6 +81,21 @@ export function useUserProfile() {
     await fetchUserProfile()
   }
 
+  const updateStatus = async (status: string) => {
+    if (!user) throw new Error('Not authenticated')
+
+    const trimmed = status.trim()
+    if (trimmed.length > 30) {
+      throw new Error('Status must be 30 characters or less')
+    }
+    if (trimmed && !/^[a-zA-Z0-9 ]+$/.test(trimmed)) {
+      throw new Error('Status can only contain letters, numbers, and spaces')
+    }
+
+    const { user: updated } = await api.users.updateStatus(trimmed)
+    setUserProfile(updated)
+  }
+
   useEffect(() => {
     fetchUserProfile()
   }, [user, isAuthenticated])
@@ -95,6 +110,7 @@ export function useUserProfile() {
     deleteVent,
     setAvatarFromGif,
     removeAvatar,
+    updateStatus,
     refresh: fetchUserProfile,
   }
 }

@@ -19,9 +19,21 @@ async function resolveVentIdOr404(identifier, res) {
     }
     return ventId;
 }
-const createVentSchema = z.object({
-    content: z.string().min(1).max(500),
+const createVentSchema = z
+    .object({
+    content: z.string().max(500).optional().default(''),
+    gif_id: z.string().trim().optional(),
     tag_ids: z.array(z.string().uuid()).min(1).max(3),
+})
+    .superRefine((data, ctx) => {
+    const hasText = data.content.trim().length > 0;
+    const hasGif = Boolean(data.gif_id?.trim());
+    if (!hasText && !hasGif) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Add text, a GIF, or both',
+        });
+    }
 });
 router.get('/', async (req, res) => {
     try {
@@ -168,12 +180,38 @@ router.post('/', requireAuth, async (req, res) => {
     if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid input' });
     }
-    const { content, tag_ids } = parsed.data;
+    const { content, tag_ids, gif_id: rawGifId } = parsed.data;
+    const trimmedContent = content.trim();
+    const gifId = rawGifId?.trim() || null;
     const userId = req.user.userId;
     const { pool } = await import('../db.js');
     const pgClient = await pool.connect();
     try {
         await pgClient.query('BEGIN');
+        let assetId = null;
+        if (gifId) {
+            const gifValidation = validateGifComment(gifId);
+            if (!gifValidation.valid) {
+                await pgClient.query('ROLLBACK');
+                return res.status(400).json({ error: gifValidation.error });
+            }
+            if (!isKlipyConfigured()) {
+                await pgClient.query('ROLLBACK');
+                return res.status(503).json({
+                    error: 'GIF posts are not configured. Add KLIPY_API_KEY to server/.env',
+                });
+            }
+            const gifHourlyCount = await pgClient.query(`SELECT COUNT(*)::int AS count FROM vents
+         WHERE user_id = $1
+           AND asset_id IS NOT NULL
+           AND created_at > now() - INTERVAL '1 hour'`, [userId]);
+            if ((gifHourlyCount.rows[0]?.count ?? 0) >= MAX_GIF_COMMENTS_PER_USER_PER_HOUR) {
+                await pgClient.query('ROLLBACK');
+                return res.status(429).json({
+                    error: 'GIF post limit reached. Please try again later.',
+                });
+            }
+        }
         const userResult = await pgClient.query('SELECT post_count_today, last_post_date FROM users WHERE id = $1 FOR UPDATE', [userId]);
         const user = userResult.rows[0];
         if (!user) {
@@ -189,9 +227,17 @@ router.post('/', requireAuth, async (req, res) => {
             });
         }
         const slug = await generateUniqueVentSlug();
-        const ventResult = await pgClient.query(`INSERT INTO vents (user_id, content, slug, expires_at)
-       VALUES ($1, $2, $3, now() + INTERVAL '24 hours')
-       RETURNING id, slug, user_id, content, created_at, expires_at`, [userId, content.trim(), slug]);
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        if (gifId) {
+            const asset = await ingestKlipyGif({
+                externalId: gifId,
+                expiresAt,
+            });
+            assetId = asset.id;
+        }
+        const ventResult = await pgClient.query(`INSERT INTO vents (user_id, content, slug, expires_at, asset_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, slug, user_id, content, created_at, expires_at, asset_id`, [userId, trimmedContent, slug, expiresAt.toISOString(), assetId]);
         const vent = ventResult.rows[0];
         const tagCheck = await pgClient.query('SELECT COUNT(*)::int AS count FROM mood_tags WHERE id = ANY($1::uuid[])', [tag_ids]);
         if ((tagCheck.rows[0]?.count ?? 0) !== tag_ids.length) {

@@ -10,6 +10,7 @@ export interface UserRow {
   avatar_path?: string | null
   avatar_mime_type?: string | null
   avatar_updated_at?: string | null
+  status?: string | null
   is_admin?: boolean
 }
 
@@ -24,5 +25,5 @@ export function enrichUser(user: UserRow) {
 
 export const USER_PUBLIC_FIELDS = `
   id, username, email, created_at, last_post_date, post_count_today,
-  avatar_path, avatar_mime_type, avatar_updated_at
+  avatar_path, avatar_mime_type, avatar_updated_at, status
 `

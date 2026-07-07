@@ -8,6 +8,7 @@ export interface User {
   is_admin?: boolean
   avatar_url?: string | null
   avatar_mime_type?: string | null
+  status?: string | null
 }
 
 export interface MoodTag {
@@ -33,7 +34,7 @@ export interface VentComment {
   comment_type: 'emoji' | 'gif'
   emoji: string | null
   created_at: string
-  user?: Pick<User, 'id' | 'username' | 'avatar_url'>
+  user?: Pick<User, 'id' | 'username' | 'status' | 'avatar_url'>
   asset?: CommentAsset
 }
 
@@ -59,6 +60,12 @@ export type CommentPayload =
   | { type: 'emoji'; emoji: string }
   | { type: 'gif'; gif_id: string }
 
+export interface CreateVentPayload {
+  content?: string
+  tag_ids: string[]
+  gif_id?: string
+}
+
 export interface Vent {
   id: string
   slug: string
@@ -68,7 +75,8 @@ export interface Vent {
   expires_at: string
   is_on_wall?: boolean
   comments_open?: boolean
-  user?: Pick<User, 'id' | 'username' | 'avatar_url'>
+  user?: Pick<User, 'id' | 'username' | 'status' | 'avatar_url'>
+  asset?: CommentAsset
   mood_tags?: MoodTag[]
   reactions?: Reaction[]
   comments?: VentComment[]
@@ -86,7 +94,7 @@ export interface Reaction {
   user_id: string
   emoji: string
   created_at: string
-  user?: Pick<User, 'id' | 'username' | 'avatar_url'>
+  user?: Pick<User, 'id' | 'username' | 'status' | 'avatar_url'>
 }
 
 export interface AuthUser {

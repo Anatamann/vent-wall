@@ -2,6 +2,7 @@ import type {
   AdminOverview,
   AuthUser,
   CommentPayload,
+  CreateVentPayload,
   FeedbackStatus,
   GifDisclaimer,
   KlipyGifItem,
@@ -227,10 +228,10 @@ export const api = {
       return request<Vent[]>(`/vents${query ? `?${query}` : ''}`, {}, false)
     },
 
-    create(content: string, tagIds: string[]): Promise<Vent> {
+    create(payload: CreateVentPayload): Promise<Vent> {
       return request<Vent>('/vents', {
         method: 'POST',
-        body: JSON.stringify({ content, tag_ids: tagIds }),
+        body: JSON.stringify(payload),
       })
     },
 
@@ -330,6 +331,13 @@ export const api = {
       const data = await request<{ user: User }>('/users/me/avatar', { method: 'DELETE' })
       syncAuthUserAvatar(data.user)
       return data
+    },
+
+    updateStatus(status: string): Promise<{ user: User }> {
+      return request('/users/me/status', {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
     },
   },
 

@@ -12,8 +12,8 @@ import {
   X,
   Calendar,
 } from 'lucide-react'
-import { truncateVentContent } from '../lib/format'
 import type { Vent } from '../lib/types'
+import VentContentDisplay from './VentContentDisplay'
 
 interface UserVentsListProps {
   vents: Vent[]
@@ -90,8 +90,6 @@ function VentCard({
   onCancelDelete,
   onConfirmDelete,
 }: VentCardProps) {
-  const { preview, isTruncated } = truncateVentContent(vent.content)
-
   return (
     <div
       className={`border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
@@ -117,23 +115,23 @@ function VentCard({
         {onWall ? (
           <Link
             to={`/post/${vent.slug}`}
-            className="block text-gray-800 dark:text-gray-200 leading-relaxed hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            className="block hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
           >
-            <p className={compact ? 'text-sm line-clamp-2' : ''}>{preview}</p>
-            {isTruncated && (
-              <span className="text-sm text-primary-600 dark:text-primary-400 font-medium mt-1 inline-block">
-                Read full post →
-              </span>
-            )}
+            <VentContentDisplay
+              content={vent.content}
+              asset={vent.asset}
+              compact={compact}
+              showReadMore={compact}
+              textClassName="text-gray-800 dark:text-gray-200 leading-relaxed"
+            />
           </Link>
         ) : (
-          <p
-            className={`text-gray-800 dark:text-gray-200 leading-relaxed ${
-              compact ? 'text-sm line-clamp-3' : ''
-            }`}
-          >
-            {compact ? preview : vent.content}
-          </p>
+          <VentContentDisplay
+            content={vent.content}
+            asset={vent.asset}
+            compact={compact}
+            textClassName="text-gray-800 dark:text-gray-200 leading-relaxed"
+          />
         )}
       </div>
 
@@ -156,43 +154,48 @@ function VentCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-500 dark:text-gray-400">
-          <span>{formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })}</span>
-          <span>{vent.reactions?.length || 0} reactions</span>
-          {onWall && (
-            <span>
-              Leaves Wall {formatDistanceToNow(new Date(vent.expires_at), { addSuffix: true })}
-            </span>
-          )}
-        </div>
+      <div className="flex items-center justify-between text-sm gap-3">
+        <span className="text-gray-500 dark:text-gray-400">
+          {vent.reactions?.length || 0} reactions
+        </span>
 
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          {showDeleteConfirm === vent.id ? (
-            <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex flex-col items-end gap-0.5 text-xs text-gray-500 dark:text-gray-400 text-right">
+            <span>{formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })}</span>
+            {onWall && (
+              <span>
+                Leaves Wall {formatDistanceToNow(new Date(vent.expires_at), { addSuffix: true })}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {showDeleteConfirm === vent.id ? (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={onCancelDelete}
+                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onConfirmDelete(vent.id)}
+                  disabled={deletingVent === vent.id}
+                  className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deletingVent === vent.id ? 'Deleting...' : 'Confirm'}
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={onCancelDelete}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                onClick={() => onRequestDelete(vent.id)}
+                className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                title="Delete vent"
               >
-                Cancel
+                <Trash2 className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => onConfirmDelete(vent.id)}
-                disabled={deletingVent === vent.id}
-                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-              >
-                {deletingVent === vent.id ? 'Deleting...' : 'Confirm'}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => onRequestDelete(vent.id)}
-              className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-              title="Delete vent"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

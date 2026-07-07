@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Minus } from 'lucide-react'
+import { X, Plus, Minus, Image } from 'lucide-react'
 import { useMoodTags } from '../hooks/useMoodTags'
 import { useAuth } from '../hooks/useAuth'
 import { api } from '../lib/api'
 import LoadingSpinner from './LoadingSpinner'
-import type { MoodTag } from '../lib/types'
+import GifPicker from './GifPicker'
+import MediaAttribution from './MediaAttribution'
+import type { KlipyGifItem, MoodTag } from '../lib/types'
 
 interface PostModalProps {
   isOpen: boolean
@@ -16,6 +18,8 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
   const { user } = useAuth()
   const { tags } = useMoodTags()
   const [content, setContent] = useState('')
+  const [selectedGif, setSelectedGif] = useState<KlipyGifItem | null>(null)
+  const [showGifPicker, setShowGifPicker] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -36,6 +40,8 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
   useEffect(() => {
     if (!isOpen) {
       setContent('')
+      setSelectedGif(null)
+      setShowGifPicker(false)
       setSelectedTags([])
       setError('')
       setSearchQuery('')
@@ -54,16 +60,26 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
     })
   }
 
+  const handleGifSelect = (gif: KlipyGifItem) => {
+    setSelectedGif(gif)
+    setShowGifPicker(false)
+    setError('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
+
+    const trimmedContent = content.trim()
+    const hasText = trimmedContent.length > 0
+    const hasGif = Boolean(selectedGif)
 
     setError('')
     setIsSubmitting(true)
 
     try {
-      if (content.trim().length < 1) {
-        throw new Error('Please write something to share')
+      if (!hasText && !hasGif) {
+        throw new Error('Add text, a GIF, or both')
       }
       if (content.length > 500) {
         throw new Error('Vent must be 500 characters or less')
@@ -72,7 +88,11 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
         throw new Error('Please select at least one mood tag')
       }
 
-      await api.vents.create(content.trim(), selectedTags)
+      await api.vents.create({
+        content: trimmedContent,
+        tag_ids: selectedTags,
+        ...(selectedGif ? { gif_id: selectedGif.id } : {}),
+      })
       onPostCreated()
       onClose()
     } catch (err: unknown) {
@@ -87,6 +107,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
 
   const characterCount = content.length
   const isOverLimit = characterCount > 500
+  const hasContent = content.trim().length > 0 || Boolean(selectedGif)
   const selectedTagObjects = tags.filter((tag) => selectedTags.includes(tag.id))
 
   return (
@@ -106,14 +127,28 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              What's on your mind?
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="content"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                What's on your mind?
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowGifPicker(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+              >
+                <Image className="w-4 h-4" />
+                Add GIF
+              </button>
+            </div>
+
             <textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts, feelings, or experiences..."
+              placeholder="Share your thoughts, feelings, or experiences…"
               rows={4}
               className={`w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 transition-colors ${
                 isOverLimit
@@ -121,17 +156,43 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
                   : 'border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500'
               } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400`}
             />
+
+            {selectedGif && (
+              <div className="mt-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <img
+                    src={selectedGif.previewUrl}
+                    alt={selectedGif.title || 'Selected GIF'}
+                    className="max-h-28 rounded object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGif(null)}
+                    className="p-1 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    title="Remove GIF"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="mt-2">
+                  <MediaAttribution />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-center mt-2">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Express yourself authentically and respectfully
+                Text optional when a GIF is attached
               </p>
-              <span className={`text-sm ${
-                isOverLimit
-                  ? 'text-red-500 dark:text-red-400'
-                  : characterCount > 450
-                    ? 'text-yellow-500 dark:text-yellow-400'
-                    : 'text-gray-500 dark:text-gray-400'
-              }`}>
+              <span
+                className={`text-sm ${
+                  isOverLimit
+                    ? 'text-red-500 dark:text-red-400'
+                    : characterCount > 450
+                      ? 'text-yellow-500 dark:text-yellow-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                }`}
+              >
                 {characterCount}/500
               </span>
             </div>
@@ -232,7 +293,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isOverLimit || content.trim().length === 0 || selectedTags.length === 0}
+              disabled={isSubmitting || isOverLimit || !hasContent || selectedTags.length === 0}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
             >
               {isSubmitting ? (
@@ -247,6 +308,12 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
           </div>
         </form>
       </div>
+
+      <GifPicker
+        isOpen={showGifPicker}
+        onClose={() => setShowGifPicker(false)}
+        onGifSelect={handleGifSelect}
+      />
     </div>
   )
 }

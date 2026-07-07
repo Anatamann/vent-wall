@@ -7,6 +7,8 @@ import ReactionButton from '../components/ReactionButton'
 import CommentSection from '../components/CommentSection'
 import LoadingSpinner from '../components/LoadingSpinner'
 import UserAvatar from '../components/UserAvatar'
+import UserNameWithStatus from '../components/UserNameWithStatus'
+import VentContentDisplay from '../components/VentContentDisplay'
 
 export default function PostDetail() {
   const { slug } = useParams<{ slug: string }>()
@@ -58,37 +60,37 @@ export default function PostDetail() {
       </Link>
 
       <article className="card">
-        <header className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
+        <header className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center space-x-3 min-w-0">
             <UserAvatar
               username={vent.user?.username || 'Anonymous'}
               avatarUrl={vent.user?.avatar_url}
               size="md"
             />
-            <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">
-                {vent.user?.username || 'Anonymous'}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{timeAgo}</p>
-            </div>
+            <UserNameWithStatus
+              username={vent.user?.username || 'Anonymous'}
+              status={vent.user?.status}
+              usernameClassName="font-medium text-gray-900 dark:text-gray-100"
+            />
           </div>
 
-          {vent.is_on_wall ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
-              <Clock className="w-3.5 h-3.5" />
-              Leaves Wall {expiresIn}
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-              Archived
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{timeAgo}</p>
+            {vent.is_on_wall ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                <Clock className="w-3.5 h-3.5" />
+                Leaves Wall {expiresIn}
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                Archived
+              </span>
+            )}
+          </div>
         </header>
 
         <div className="mb-5">
-          <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg whitespace-pre-wrap break-words">
-            {vent.content}
-          </p>
+          <VentContentDisplay content={vent.content} asset={vent.asset} />
         </div>
 
         {vent.mood_tags && vent.mood_tags.length > 0 && (
