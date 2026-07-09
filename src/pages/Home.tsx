@@ -144,6 +144,8 @@ export default function Home() {
         hasMore={hasMore}
         onLoadMore={loadMore}
         selectedTags={selectedTags}
+        onCreatePost={handlePostClick}
+        onClearFilters={() => setSelectedTags([])}
       />
 
       {/* Tag Search Modal */}

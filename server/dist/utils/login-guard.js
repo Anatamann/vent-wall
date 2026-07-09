@@ -1,4 +1,5 @@
 import { query } from '../db.js';
+import { createPublicId } from './ids.js';
 import { MAX_LOGIN_FAILURES_PER_HOUR } from '../constants.js';
 export async function checkLoginAllowed(ipHash, username) {
     const normalized = username.trim().toLowerCase();
@@ -17,6 +18,7 @@ export async function checkLoginAllowed(ipHash, username) {
     return { allowed: true };
 }
 export async function recordLoginAttempt(ipHash, username, succeeded) {
-    await query(`INSERT INTO login_attempts (ip_hash, username_normalized, succeeded)
-     VALUES ($1, $2, $3)`, [ipHash, username.trim().toLowerCase(), succeeded]);
+    const attemptId = await createPublicId('l', 'login_attempts');
+    await query(`INSERT INTO login_attempts (id, ip_hash, username_normalized, succeeded)
+     VALUES ($1, $2, $3, $4)`, [attemptId, ipHash, username.trim().toLowerCase(), succeeded]);
 }

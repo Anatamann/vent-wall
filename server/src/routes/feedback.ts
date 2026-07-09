@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query } from '../db.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createPublicId } from '../utils/ids.js'
 
 const router = Router()
 
@@ -63,11 +64,12 @@ router.post('/', requireAuth, async (req, res) => {
       })
     }
 
+    const feedbackId = await createPublicId('f', 'user_feedback')
     const inserted = await query<FeedbackRow>(
-      `INSERT INTO user_feedback (user_id, tag_request, message)
-       VALUES ($1, $2, $3)
+      `INSERT INTO user_feedback (id, user_id, tag_request, message)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, user_id, feedback_date, tag_request, message, status, created_at`,
-      [userId, tag_request.trim(), message]
+      [feedbackId, userId, tag_request.trim(), message]
     )
 
     return res.status(201).json({ feedback: inserted.rows[0] })

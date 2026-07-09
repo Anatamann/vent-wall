@@ -1,7 +1,7 @@
 import { query } from '../db.js'
 import { buildAvatarUrl } from './avatar-assets.js'
 import { fetchCommentsForVent, mapCommentRow } from './comments.js'
-import { resolveVentUuid } from './slug.js'
+import { resolveVentId } from './slug.js'
 import { isOnWall } from './wall.js'
 
 function mapVentUser(row: {
@@ -132,7 +132,7 @@ export async function fetchVentsWithRelations(options: {
       EXISTS (
         SELECT 1 FROM vent_tags vt_filter
         WHERE vt_filter.vent_id = v.id
-          AND vt_filter.tag_id = ANY($${paramIndex++}::uuid[])
+          AND vt_filter.tag_id = ANY($${paramIndex++}::text[])
       )
     `)
     params.push(tagIds)
@@ -213,7 +213,7 @@ export async function fetchVentsWithRelations(options: {
 }
 
 export async function fetchVentByIdentifier(identifier: string) {
-  const ventId = await resolveVentUuid(identifier)
+  const ventId = await resolveVentId(identifier)
   if (!ventId) return null
 
   return fetchVentById(ventId)

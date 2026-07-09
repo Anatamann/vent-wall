@@ -8,6 +8,7 @@ import { checkRegistrationAllowed, recordRegistrationAttempt, } from '../utils/r
 import { isUsernameTaken, normalizeUsername, validateUsernameFormat, } from '../utils/username.js';
 import { checkLoginAllowed, recordLoginAttempt } from '../utils/login-guard.js';
 import { isAdminUser } from '../config/admin.js';
+import { createPublicId } from '../utils/ids.js';
 import { enrichUser, USER_PUBLIC_FIELDS } from '../utils/user-profile.js';
 const router = Router();
 const registerSchema = z.object({
@@ -72,9 +73,10 @@ router.post('/register', async (req, res) => {
             return res.status(409).json({ error: 'Username or email is already in use' });
         }
         const passwordHash = await bcrypt.hash(password, 12);
-        const result = await query(`INSERT INTO users (username, email, password_hash, registration_ip_hash, last_post_date, post_count_today)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE, 0)
-       RETURNING id, username, email, created_at, last_post_date, post_count_today`, [username, email, passwordHash, ipHash]);
+        const userId = await createPublicId('u', 'users');
+        const result = await query(`INSERT INTO users (id, username, email, password_hash, registration_ip_hash, last_post_date, post_count_today)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 0)
+       RETURNING id, username, email, created_at, last_post_date, post_count_today`, [userId, username, email, passwordHash, ipHash]);
         await recordRegistrationAttempt(ipHash, true);
         const user = result.rows[0];
         const token = signToken({ userId: user.id, username: user.username });

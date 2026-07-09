@@ -15,6 +15,7 @@ import {
 } from '../utils/username.js'
 import { checkLoginAllowed, recordLoginAttempt } from '../utils/login-guard.js'
 import { isAdminUser } from '../config/admin.js'
+import { createPublicId } from '../utils/ids.js'
 import { enrichUser, USER_PUBLIC_FIELDS, type UserRow } from '../utils/user-profile.js'
 
 const router = Router()
@@ -97,11 +98,12 @@ router.post('/register', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12)
+    const userId = await createPublicId('u', 'users')
     const result = await query(
-      `INSERT INTO users (username, email, password_hash, registration_ip_hash, last_post_date, post_count_today)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE, 0)
+      `INSERT INTO users (id, username, email, password_hash, registration_ip_hash, last_post_date, post_count_today)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 0)
        RETURNING id, username, email, created_at, last_post_date, post_count_today`,
-      [username, email, passwordHash, ipHash]
+      [userId, username, email, passwordHash, ipHash]
     )
 
     await recordRegistrationAttempt(ipHash, true)

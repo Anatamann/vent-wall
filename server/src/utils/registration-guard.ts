@@ -1,4 +1,5 @@
 import { query } from '../db.js'
+import { createPublicId } from './ids.js'
 import {
   IP_REGISTRATION_BLOCK_HOURS,
   MAX_ACCOUNTS_PER_IP_PER_DAY,
@@ -71,10 +72,11 @@ export async function recordRegistrationAttempt(
   ipHash: string,
   succeeded: boolean
 ): Promise<void> {
+  const attemptId = await createPublicId('g', 'registration_attempts')
   await query(
-    `INSERT INTO registration_attempts (ip_hash, succeeded)
-     VALUES ($1, $2)`,
-    [ipHash, succeeded]
+    `INSERT INTO registration_attempts (id, ip_hash, succeeded)
+     VALUES ($1, $2, $3)`,
+    [attemptId, ipHash, succeeded]
   )
 }
 

@@ -5,12 +5,16 @@ import EmojiPicker from './EmojiPicker'
 import GifPicker from './GifPicker'
 import UserNameWithStatus from './UserNameWithStatus'
 import type { CommentPayload, KlipyGifItem, VentComment } from '../lib/types'
-import { MAX_COMMENTS_PER_USER_PER_VENT } from '../lib/constants'
+import {
+  MAX_COMMENTS_PER_USER_PER_VENT,
+  MAX_OP_COMMENTS_PER_VENT,
+} from '../lib/constants'
 
 interface CommentSectionProps {
   comments: VentComment[]
   commentsOpen: boolean
   currentUserId?: string
+  ventUserId?: string
   onAddComment: (payload: CommentPayload) => Promise<void>
   disabled?: boolean
 }
@@ -21,6 +25,7 @@ export default function CommentSection({
   comments,
   commentsOpen,
   currentUserId,
+  ventUserId,
   onAddComment,
   disabled = false,
 }: CommentSectionProps) {
@@ -31,10 +36,17 @@ export default function CommentSection({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isOwner = Boolean(
+    currentUserId && ventUserId && currentUserId === ventUserId
+  )
+  const commentLimit = isOwner
+    ? MAX_OP_COMMENTS_PER_VENT
+    : MAX_COMMENTS_PER_USER_PER_VENT
+
   const userCommentCount = currentUserId
     ? comments.filter((c) => c.user_id === currentUserId).length
     : 0
-  const atCommentLimit = userCommentCount >= MAX_COMMENTS_PER_USER_PER_VENT
+  const atCommentLimit = userCommentCount >= commentLimit
 
   const handleOpenPicker = (e: React.MouseEvent, tab: PickerTab) => {
     if (disabled || !commentsOpen || atCommentLimit) return
@@ -137,7 +149,7 @@ export default function CommentSection({
 
       {commentsOpen && currentUserId && atCommentLimit && (
         <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
-          Comment limit reached ({MAX_COMMENTS_PER_USER_PER_VENT}/{MAX_COMMENTS_PER_USER_PER_VENT} per post).
+          Comment limit reached ({commentLimit}/{commentLimit} per post).
         </p>
       )}
 

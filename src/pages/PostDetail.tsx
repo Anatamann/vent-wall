@@ -134,6 +134,7 @@ export default function PostDetail() {
         comments={vent.comments || []}
         commentsOpen={commentsOpen}
         currentUserId={user?.id}
+        ventUserId={vent.user_id}
         onAddComment={addComment}
         disabled={!isAuthenticated}
       />

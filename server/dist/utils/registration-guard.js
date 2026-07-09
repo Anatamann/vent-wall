@@ -1,4 +1,5 @@
 import { query } from '../db.js';
+import { createPublicId } from './ids.js';
 import { IP_REGISTRATION_BLOCK_HOURS, MAX_ACCOUNTS_PER_IP_PER_DAY, MAX_REGISTRATION_ATTEMPTS_PER_HOUR, } from '../constants.js';
 export async function checkRegistrationAllowed(ipHash) {
     const blocked = await query(`SELECT reason FROM blocked_ip_hashes
@@ -37,8 +38,9 @@ export async function checkRegistrationAllowed(ipHash) {
     return { allowed: true };
 }
 export async function recordRegistrationAttempt(ipHash, succeeded) {
-    await query(`INSERT INTO registration_attempts (ip_hash, succeeded)
-     VALUES ($1, $2)`, [ipHash, succeeded]);
+    const attemptId = await createPublicId('g', 'registration_attempts');
+    await query(`INSERT INTO registration_attempts (id, ip_hash, succeeded)
+     VALUES ($1, $2, $3)`, [attemptId, ipHash, succeeded]);
 }
 export async function blockIpHash(ipHash, reason, blockHours) {
     const expiresAt = blockHours

@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { randomUUID } from 'crypto'
 import { query } from '../db.js'
+import { createPublicId } from './ids.js'
 import { getKlipyGifById, type KlipyGifItem } from '../providers/klipy.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -196,12 +197,14 @@ export async function ingestKlipyGif(options: {
   const filePath = await downloadToCache(klipyGif.gifUrl, 'image/gif')
 
   try {
+    const assetId = await createPublicId('m', 'media_assets')
     const inserted = await query<MediaAssetRow>(
       `INSERT INTO media_assets (
-         type, source, external_id, preview_url, file_path, mime_type, width, height, expires_at
-       ) VALUES ('gif', 'klipy', $1, $2, $3, 'image/gif', $4, $5, $6)
+         id, type, source, external_id, preview_url, file_path, mime_type, width, height, expires_at
+       ) VALUES ($1, 'gif', 'klipy', $2, $3, $4, 'image/gif', $5, $6, $7)
        RETURNING *`,
       [
+        assetId,
         klipyGif.id,
         klipyGif.previewUrl,
         filePath,

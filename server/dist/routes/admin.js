@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db.js';
 import { requireAdmin } from '../middleware/admin.js';
+import { createPublicId } from '../utils/ids.js';
 const router = Router();
 router.use(requireAdmin);
 const updateFeedbackSchema = z.object({
@@ -124,8 +125,10 @@ router.patch('/feedback/:id', async (req, res) => {
       RETURNING id, tag_request, message, status, admin_note, created_at,
         (SELECT username FROM users WHERE id = user_feedback.user_id) AS username
       `, [req.params.id, status ?? null, admin_note ?? null, req.user.userId]);
-        await query(`INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, metadata)
-       VALUES ($1, 'feedback_update', 'user_feedback', $2, $3)`, [
+        const auditId = await createPublicId('a', 'admin_audit_log');
+        await query(`INSERT INTO admin_audit_log (id, admin_user_id, action, target_type, target_id, metadata)
+       VALUES ($1, $2, 'feedback_update', 'user_feedback', $3, $4)`, [
+            auditId,
             req.user.userId,
             req.params.id,
             JSON.stringify({ status, admin_note: admin_note ?? null }),

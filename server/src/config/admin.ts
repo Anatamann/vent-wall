@@ -1,5 +1,4 @@
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isPublicId } from '../utils/ids.js'
 
 let cachedAdminIds: Set<string> | null = null
 
@@ -8,7 +7,7 @@ function parseAdminUserIds(): Set<string> {
   const ids = raw
     .split(',')
     .map((part) => part.trim())
-    .filter((part) => UUID_REGEX.test(part))
+    .filter((part) => isPublicId(part))
 
   return new Set(ids)
 }

@@ -82,7 +82,7 @@ export async function fetchCommentsForVent(ventId) {
     return result.rows;
 }
 export async function ventAcceptsComments(ventId) {
-    const result = await query('SELECT expires_at FROM vents WHERE id = $1', [ventId]);
+    const result = await query('SELECT expires_at, user_id FROM vents WHERE id = $1', [ventId]);
     const vent = result.rows[0];
     if (!vent) {
         return { accepts: false };
@@ -90,5 +90,6 @@ export async function ventAcceptsComments(ventId) {
     return {
         accepts: isOnWall(vent.expires_at),
         expires_at: vent.expires_at,
+        user_id: vent.user_id,
     };
 }

@@ -13,7 +13,7 @@ import { isKlipyConfigured } from '../providers/klipy.js';
 import { AvatarProcessingError, deleteUserAvatarFiles, setUserAvatarFromKlipy, } from '../utils/avatar-assets.js';
 import { resolveMediaAbsolutePath } from '../utils/media-assets.js';
 import { enrichUser, USER_PUBLIC_FIELDS } from '../utils/user-profile.js';
-import { isLooseUuid } from '../utils/validation.js';
+import { isPublicId } from '../utils/validation.js';
 import { normalizeStatus, validateStatusFormat } from '../utils/status.js';
 const router = Router();
 const usernameSchema = z.object({
@@ -26,7 +26,7 @@ const statusSchema = z.object({
     status: z.string().max(30),
 });
 router.get('/avatars/:userId', async (req, res) => {
-    if (!isLooseUuid(req.params.userId)) {
+    if (!isPublicId(req.params.userId)) {
         return res.status(404).json({ error: 'Avatar not found' });
     }
     try {
@@ -59,7 +59,7 @@ router.get('/me/profile', requireAuth, async (req, res) => {
         const ventIds = allVents.map((v) => v.id);
         let totalReactions = 0;
         if (ventIds.length > 0) {
-            const reactionsResult = await query('SELECT COUNT(*)::int AS count FROM reactions WHERE vent_id = ANY($1::uuid[])', [ventIds]);
+            const reactionsResult = await query('SELECT COUNT(*)::int AS count FROM reactions WHERE vent_id = ANY($1::text[])', [ventIds]);
             totalReactions = reactionsResult.rows[0]?.count || 0;
         }
         const thisMonth = new Date();

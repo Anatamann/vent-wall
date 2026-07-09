@@ -6,7 +6,7 @@ import {
   getMediaAsset,
   openMediaReadStream,
 } from '../utils/media-assets.js'
-import { isUuid } from '../utils/validation.js'
+import { isPublicId } from '../utils/validation.js'
 
 const router = Router()
 
@@ -42,7 +42,7 @@ router.get('/gifs/search', requireAuth, async (req, res) => {
 })
 
 router.get('/assets/:id', async (req, res) => {
-  if (!isUuid(req.params.id)) {
+  if (!isPublicId(req.params.id)) {
     return res.status(404).json({ error: 'Media not found' })
   }
 

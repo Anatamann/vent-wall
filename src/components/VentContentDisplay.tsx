@@ -1,6 +1,5 @@
 import { truncateVentContent } from '../lib/format'
 import type { CommentAsset } from '../lib/types'
-import MediaAttribution from './MediaAttribution'
 
 interface VentContentDisplayProps {
   content: string
@@ -56,8 +55,6 @@ export default function VentContentDisplay({
           Read full post →
         </p>
       )}
-
-      {hasAsset && !compact && <MediaAttribution />}
     </div>
   )
 }

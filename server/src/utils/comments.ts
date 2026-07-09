@@ -121,9 +121,9 @@ export async function fetchCommentsForVent(ventId: string): Promise<CommentRow[]
 
 export async function ventAcceptsComments(
   ventId: string
-): Promise<{ accepts: boolean; expires_at?: string }> {
-  const result = await query<{ expires_at: string }>(
-    'SELECT expires_at FROM vents WHERE id = $1',
+): Promise<{ accepts: boolean; expires_at?: string; user_id?: string }> {
+  const result = await query<{ expires_at: string; user_id: string }>(
+    'SELECT expires_at, user_id FROM vents WHERE id = $1',
     [ventId]
   )
 
@@ -135,5 +135,6 @@ export async function ventAcceptsComments(
   return {
     accepts: isOnWall(vent.expires_at),
     expires_at: vent.expires_at,
+    user_id: vent.user_id,
   }
 }

@@ -1,15 +1,10 @@
 import crypto from 'crypto'
 import { query } from '../db.js'
+import { isPublicId } from './ids.js'
 
 export const VENT_SLUG_LENGTH = 8
 export const VENT_SLUG_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
 export const VENT_SLUG_REGEX = /^[a-hjkmnp-z2-9]{8}$/
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-export function isUuid(value: string): boolean {
-  return UUID_REGEX.test(value)
-}
 
 export function isVentSlug(value: string): boolean {
   return VENT_SLUG_REGEX.test(value)
@@ -42,8 +37,8 @@ export async function generateUniqueVentSlug(): Promise<string> {
   throw new Error('Failed to generate unique vent slug')
 }
 
-export async function resolveVentUuid(identifier: string): Promise<string | null> {
-  if (isUuid(identifier)) {
+export async function resolveVentId(identifier: string): Promise<string | null> {
+  if (isPublicId(identifier)) {
     const result = await query<{ id: string }>(
       'SELECT id FROM vents WHERE id = $1 LIMIT 1',
       [identifier]

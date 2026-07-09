@@ -2,17 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
-import { generateUniqueVentSlug, resolveVentUuid } from '../utils/slug.js';
+import { generateUniqueVentSlug, resolveVentId } from '../utils/slug.js';
 import { fetchVentsWithRelations, fetchVentByIdentifier } from '../utils/vents.js';
 import { fetchCommentsForVent, mapCommentRow, parseCommentInput, validateEmojiComment, validateGifComment, ventAcceptsComments, } from '../utils/comments.js';
-import { parseUuidList } from '../utils/validation.js';
+import { createPublicId } from '../utils/ids.js';
+import { isPublicId, parsePublicIdList } from '../utils/validation.js';
 import { ingestKlipyGif } from '../utils/media-assets.js';
 import { isKlipyConfigured } from '../providers/klipy.js';
 import { isOnWall } from '../utils/wall.js';
-import { MAX_COMMENTS_PER_USER_PER_VENT, MAX_COMMENTS_PER_VENT, MAX_GIF_COMMENTS_PER_USER_PER_HOUR, MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT, } from '../constants.js';
+import { MAX_COMMENTS_PER_USER_PER_VENT, MAX_OP_COMMENTS_PER_VENT, MAX_COMMENTS_PER_VENT, MAX_GIF_COMMENTS_PER_USER_PER_HOUR, MAX_POSTS_PER_DAY, MAX_REACTIONS_PER_VENT, } from '../constants.js';
 const router = Router();
 async function resolveVentIdOr404(identifier, res) {
-    const ventId = await resolveVentUuid(identifier);
+    const ventId = await resolveVentId(identifier);
     if (!ventId) {
         res.status(404).json({ error: 'Vent not found' });
         return null;
@@ -23,7 +24,10 @@ const createVentSchema = z
     .object({
     content: z.string().max(500).optional().default(''),
     gif_id: z.string().trim().optional(),
-    tag_ids: z.array(z.string().uuid()).min(1).max(3),
+    tag_ids: z
+        .array(z.string().refine(isPublicId, { message: 'Invalid tag id' }))
+        .min(1)
+        .max(3),
 })
     .superRefine((data, ctx) => {
     const hasText = data.content.trim().length > 0;
@@ -38,7 +42,7 @@ const createVentSchema = z
 router.get('/', async (req, res) => {
     try {
         const rawTags = typeof req.query.tags === 'string' ? req.query.tags : '';
-        const tagIds = parseUuidList(rawTags);
+        const tagIds = parsePublicIdList(rawTags);
         if (tagIds === null) {
             return res.status(400).json({ error: 'Invalid tag filter' });
         }
@@ -94,11 +98,15 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
                 error: 'Comments are only available while this post is on the Wall',
             });
         }
+        const isOwner = ventCheck.user_id === userId;
+        const userCommentLimit = isOwner
+            ? MAX_OP_COMMENTS_PER_VENT
+            : MAX_COMMENTS_PER_USER_PER_VENT;
         const countResult = await query(`SELECT COUNT(*)::int AS count FROM vent_comments
        WHERE vent_id = $1 AND user_id = $2`, [ventId, userId]);
-        if ((countResult.rows[0]?.count ?? 0) >= MAX_COMMENTS_PER_USER_PER_VENT) {
+        if ((countResult.rows[0]?.count ?? 0) >= userCommentLimit) {
             return res.status(429).json({
-                error: `You can only add up to ${MAX_COMMENTS_PER_USER_PER_VENT} comments per post`,
+                error: `You can only add up to ${userCommentLimit} comments per post`,
             });
         }
         const ventCommentCount = await query(`SELECT COUNT(*)::int AS count FROM vent_comments WHERE vent_id = $1`, [ventId]);
@@ -143,9 +151,10 @@ router.post('/:id/comments', requireAuth, async (req, res) => {
             assetId = asset.id;
             commentType = 'gif';
         }
-        const inserted = await query(`INSERT INTO vent_comments (vent_id, user_id, comment_type, emoji, asset_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, vent_id, user_id, comment_type, emoji, asset_id, created_at`, [ventId, userId, commentType, emoji, assetId]);
+        const commentId = await createPublicId('c', 'vent_comments');
+        const inserted = await query(`INSERT INTO vent_comments (id, vent_id, user_id, comment_type, emoji, asset_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, vent_id, user_id, comment_type, emoji, asset_id, created_at`, [commentId, ventId, userId, commentType, emoji, assetId]);
         const comments = await fetchCommentsForVent(ventId);
         const created = comments.find((c) => c.id === inserted.rows[0].id);
         return res.status(201).json({
@@ -235,11 +244,12 @@ router.post('/', requireAuth, async (req, res) => {
             });
             assetId = asset.id;
         }
-        const ventResult = await pgClient.query(`INSERT INTO vents (user_id, content, slug, expires_at, asset_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, slug, user_id, content, created_at, expires_at, asset_id`, [userId, trimmedContent, slug, expiresAt.toISOString(), assetId]);
+        const ventId = await createPublicId('v', 'vents', pgClient);
+        const ventResult = await pgClient.query(`INSERT INTO vents (id, user_id, content, slug, expires_at, asset_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, slug, user_id, content, created_at, expires_at, asset_id`, [ventId, userId, trimmedContent, slug, expiresAt.toISOString(), assetId]);
         const vent = ventResult.rows[0];
-        const tagCheck = await pgClient.query('SELECT COUNT(*)::int AS count FROM mood_tags WHERE id = ANY($1::uuid[])', [tag_ids]);
+        const tagCheck = await pgClient.query('SELECT COUNT(*)::int AS count FROM mood_tags WHERE id = ANY($1::text[])', [tag_ids]);
         if ((tagCheck.rows[0]?.count ?? 0) !== tag_ids.length) {
             await pgClient.query('ROLLBACK');
             return res.status(400).json({ error: 'One or more mood tags are invalid' });
@@ -308,9 +318,10 @@ router.post('/:id/reactions', requireAuth, async (req, res) => {
                 error: `You can only add up to ${MAX_REACTIONS_PER_VENT} reactions per vent`,
             });
         }
-        const inserted = await query(`INSERT INTO reactions (vent_id, user_id, emoji)
-       VALUES ($1, $2, $3)
-       RETURNING id, vent_id, user_id, emoji, created_at`, [ventId, userId, emoji]);
+        const reactionId = await createPublicId('r', 'reactions');
+        const inserted = await query(`INSERT INTO reactions (id, vent_id, user_id, emoji)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, vent_id, user_id, emoji, created_at`, [reactionId, ventId, userId, emoji]);
         return res.status(201).json({ action: 'added', reaction: inserted.rows[0] });
     }
     catch (err) {
