@@ -26,6 +26,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
