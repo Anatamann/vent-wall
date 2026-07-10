@@ -29,15 +29,19 @@ export async function generateUniqueVentSlug() {
     throw new Error('Failed to generate unique vent slug');
 }
 export async function resolveVentId(identifier) {
+    // Slugs are 8 chars and match the public-id pattern (e.g. peace2am), so resolve
+    // by slug before id to avoid treating feed links as non-existent vent ids.
+    if (isVentSlug(identifier)) {
+        const bySlug = await query('SELECT id FROM vents WHERE slug = $1 LIMIT 1', [identifier]);
+        if (bySlug.rows[0]?.id) {
+            return bySlug.rows[0].id;
+        }
+    }
     if (isPublicId(identifier)) {
-        const result = await query('SELECT id FROM vents WHERE id = $1 LIMIT 1', [identifier]);
-        return result.rows[0]?.id ?? null;
+        const byId = await query('SELECT id FROM vents WHERE id = $1 LIMIT 1', [identifier]);
+        return byId.rows[0]?.id ?? null;
     }
-    if (!isVentSlug(identifier)) {
-        return null;
-    }
-    const result = await query('SELECT id FROM vents WHERE slug = $1 LIMIT 1', [identifier]);
-    return result.rows[0]?.id ?? null;
+    return null;
 }
 export async function backfillMissingVentSlugs() {
     const missing = await query('SELECT id FROM vents WHERE slug IS NULL ORDER BY created_at');

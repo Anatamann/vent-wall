@@ -38,23 +38,27 @@ export async function generateUniqueVentSlug(): Promise<string> {
 }
 
 export async function resolveVentId(identifier: string): Promise<string | null> {
+  // Slugs are 8 chars and match the public-id pattern (e.g. peace2am), so resolve
+  // by slug before id to avoid treating feed links as non-existent vent ids.
+  if (isVentSlug(identifier)) {
+    const bySlug = await query<{ id: string }>(
+      'SELECT id FROM vents WHERE slug = $1 LIMIT 1',
+      [identifier]
+    )
+    if (bySlug.rows[0]?.id) {
+      return bySlug.rows[0].id
+    }
+  }
+
   if (isPublicId(identifier)) {
-    const result = await query<{ id: string }>(
+    const byId = await query<{ id: string }>(
       'SELECT id FROM vents WHERE id = $1 LIMIT 1',
       [identifier]
     )
-    return result.rows[0]?.id ?? null
+    return byId.rows[0]?.id ?? null
   }
 
-  if (!isVentSlug(identifier)) {
-    return null
-  }
-
-  const result = await query<{ id: string }>(
-    'SELECT id FROM vents WHERE slug = $1 LIMIT 1',
-    [identifier]
-  )
-  return result.rows[0]?.id ?? null
+  return null
 }
 
 export async function backfillMissingVentSlugs(): Promise<number> {
