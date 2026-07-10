@@ -1,0 +1,59 @@
+# Vent Wall — systemd unit (Docker Compose, Type=oneshot)
+#
+# Install:
+#   1. Copy this repo to the host (e.g. /opt/vent-wall) and create .env:
+#        cp .env.docker.example .env
+#   2. Edit WorkingDirectory below to match the install path.
+#   3. Install the unit:
+#        sudo cp deploy/vent-wall.service /etc/systemd/system/
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now vent-wall.service
+#
+# Useful commands:
+#   sudo systemctl status vent-wall.service
+#   sudo systemctl restart vent-wall.service      # start/stop stack
+#   sudo systemctl reload vent-wall.service       # rebuild + restart containers
+#   journalctl -u vent-wall.service -f
+#
+# To run the stack as a non-root user, uncomment User= and Group= in [Service]
+# (that user must be in the docker group).
+
+[Unit]
+Description=Vent Wall web application (Docker Compose)
+Documentation=file:///opt/vent-wall/README.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Change this path to where vent-wall is installed on the server.
+WorkingDirectory=/opt/vent-wall
+
+# Ensures both /usr/bin/docker and /usr/local/bin/docker are found.
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Optional: isolate multiple stacks on one host (matches README staging example).
+# Environment=COMPOSE_PROJECT_NAME=ventwall
+
+# Uncomment to run as a non-root user in the docker group:
+# User=ventwall
+# Group=docker
+
+# Bring up postgres, api, and web (containers use restart: unless-stopped).
+ExecStart=docker compose up -d --remove-orphans
+
+# Tear down containers on stop; named volumes (DB, media) are preserved.
+ExecStop=docker compose down
+
+# Rebuild images after pulling code or changing Dockerfiles.
+ExecReload=docker compose up -d --build --remove-orphans
+
+# First start may build images and wait for health checks.
+TimeoutStartSec=600
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
