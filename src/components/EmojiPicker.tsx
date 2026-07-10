@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import { Smile, Heart, ThumbsUp, Star, Zap, Coffee } from 'lucide-react'
+import { useState } from 'react'
 
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void
@@ -9,11 +8,23 @@ interface EmojiPickerProps {
 }
 
 const EMOJI_CATEGORIES = {
-  'Emotions': ['❤️', '😊', '😢', '😡', '😰', '😌', '🤗', '😔', '🥰', '😍'],
-  'Support': ['🫂', '🙏', '💪', '👏', '🤝', '💯', '✨', '🌟', '🔥', '💝'],
-  'Nature': ['🌊', '🌅', '🌈', '🌙', '☀️', '🌸', '🍃', '🌺', '🦋', '🌻'],
-  'Activities': ['☕', '📝', '🎵', '🏃', '🧘', '🎨', '📚', '🌃', '🏄', '✈️'],
-  'Objects': ['💡', '🎯', '🔑', '🎪', '🎭', '🎨', '🎪', '🎲', '🎸', '🎤']
+  Emotions: ['❤️', '😊', '😢', '😡', '😰', '😌', '🤗', '😔', '🥰', '😍'],
+  Support: ['🫂', '🙏', '💪', '👏', '🤝', '💯', '✨', '🌟', '🔥', '💝'],
+  Nature: ['🌊', '🌅', '🌈', '🌙', '☀️', '🌸', '🍃', '🌺', '🦋', '🌻'],
+  Activities: ['☕', '📝', '🎵', '🏃', '🧘', '🎨', '📚', '🌃', '🏄', '✈️'],
+  Objects: ['💡', '🎯', '🔑', '🎪', '🎭', '🎨', '🎪', '🎲', '🎸', '🎤'],
+}
+
+function getAnchoredStyle(position: { x: number; y: number }) {
+  const isWide = typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches
+  if (!isWide) return undefined
+
+  return {
+    position: 'fixed' as const,
+    top: Math.max(10, Math.min(window.innerHeight - 300, position.y - 200)),
+    left: Math.max(10, Math.min(window.innerWidth - 330, position.x - 160)),
+    zIndex: 1000,
+  }
 }
 
 export default function EmojiPicker({ onEmojiSelect, onClose, isOpen, position }: EmojiPickerProps) {
@@ -26,33 +37,22 @@ export default function EmojiPicker({ onEmojiSelect, onClose, isOpen, position }
     onClose()
   }
 
-  const style = position ? {
-    position: 'fixed' as const,
-    top: Math.max(10, Math.min(window.innerHeight - 300, position.y - 200)),
-    left: Math.max(10, Math.min(window.innerWidth - 330, position.x - 160)),
-    zIndex: 1000
-  } : {}
+  const anchoredStyle = position ? getAnchoredStyle(position) : undefined
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 z-40" 
-        onClick={onClose}
-      />
-      
-      {/* Picker */}
-      <div 
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-80 z-50"
-        style={style}
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+
+      <div
+        className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl sm:rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 inset-x-4 bottom-4 max-h-[70vh] overflow-y-auto w-auto sm:inset-x-auto sm:bottom-auto sm:w-80 sm:max-h-none"
+        style={anchoredStyle}
       >
-        {/* Category Tabs */}
-        <div className="flex space-x-1 mb-3 overflow-x-auto">
+        <div className="flex gap-1 mb-3 overflow-x-auto pb-0.5 -mx-1 px-1">
           {Object.keys(EMOJI_CATEGORIES).map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md whitespace-nowrap transition-colors shrink-0 ${
                 activeCategory === category
                   ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -63,13 +63,12 @@ export default function EmojiPicker({ onEmojiSelect, onClose, isOpen, position }
           ))}
         </div>
 
-        {/* Emoji Grid */}
         <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto">
           {EMOJI_CATEGORIES[activeCategory as keyof typeof EMOJI_CATEGORIES].map((emoji, index) => (
             <button
               key={`${emoji}-${index}`}
               onClick={() => handleEmojiClick(emoji)}
-              className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-lg sm:text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               title={emoji}
             >
               {emoji}
@@ -77,18 +76,15 @@ export default function EmojiPicker({ onEmojiSelect, onClose, isOpen, position }
           ))}
         </div>
 
-        {/* Quick Actions */}
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Quick reactions
-            </span>
-            <div className="flex space-x-1">
+          <div className="flex justify-between items-center gap-2 min-w-0">
+            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">Quick reactions</span>
+            <div className="flex gap-1 shrink-0">
               {['❤️', '👏', '🙏', '💪'].map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => handleEmojiClick(emoji)}
-                  className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                  className="w-8 h-8 flex items-center justify-center text-base sm:text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                 >
                   {emoji}
                 </button>

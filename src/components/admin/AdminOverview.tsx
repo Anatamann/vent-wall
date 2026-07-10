@@ -51,7 +51,7 @@ export default function AdminOverviewPanel() {
   return (
     <div className="space-y-6">
       {new_feedback_count > 0 && (
-        <div className="rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 px-4 py-3 text-sm text-primary-800 dark:text-primary-200">
+        <div className="rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 px-4 py-3 text-xs sm:text-sm text-primary-800 dark:text-primary-200">
           {new_feedback_count} new feedback {new_feedback_count === 1 ? 'message' : 'messages'} waiting in the Feedback tab.
         </div>
       )}
@@ -65,25 +65,25 @@ export default function AdminOverviewPanel() {
           { label: 'New users', value: totals.new_users_today },
         ].map((stat) => (
           <div key={stat.label} className="card text-center py-4">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
             Top mood tags (7d, on Wall)
           </h3>
           {top_tags.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No tag data yet.</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">No tag data yet.</p>
           ) : (
             <ul className="space-y-2">
               {top_tags.map((tag) => (
                 <li
                   key={tag.name}
-                  className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
+                  className="flex items-center justify-between text-xs sm:text-sm text-gray-700 dark:text-gray-300"
                 >
                   <span>
                     {tag.emoji} {tag.name}
@@ -96,19 +96,19 @@ export default function AdminOverviewPanel() {
         </div>
 
         <div className="card">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
             Top reaction emojis (7d)
           </h3>
           {top_emojis.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No emoji data yet.</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">No emoji data yet.</p>
           ) : (
             <ul className="space-y-2">
               {top_emojis.map((item) => (
                 <li
                   key={item.emoji}
-                  className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
+                  className="flex items-center justify-between text-xs sm:text-sm text-gray-700 dark:text-gray-300"
                 >
-                  <span className="text-xl">{item.emoji}</span>
+                  <span className="text-lg sm:text-xl">{item.emoji}</span>
                   <span className="font-medium">{item.count}</span>
                 </li>
               ))}

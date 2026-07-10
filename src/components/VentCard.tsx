@@ -60,9 +60,10 @@ export default function VentCard({ vent }: VentCardProps) {
           <UserNameWithStatus
             username={vent.user?.username || 'Anonymous'}
             status={vent.user?.status}
+            usernameClassName="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
           />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{timeAgo}</p>
+        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">{timeAgo}</p>
       </div>
 
       <div className="mb-4 flex-grow">
@@ -79,7 +80,7 @@ export default function VentCard({ vent }: VentCardProps) {
           {vent.mood_tags.slice(0, 2).map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors"
               style={{
                 backgroundColor: `${tag.color}20`,
                 color: tag.color,
@@ -91,14 +92,14 @@ export default function VentCard({ vent }: VentCardProps) {
             </span>
           ))}
           {vent.mood_tags.length > 2 && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 self-center">
+            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 self-center">
               +{vent.mood_tags.length - 2}
             </span>
           )}
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-3 mt-auto border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-4 pt-3 mt-auto border-t border-gray-100 dark:border-gray-700 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
         {reactionCount > 0 && (
           <span>
             {reactionCount} reaction{reactionCount !== 1 ? 's' : ''}

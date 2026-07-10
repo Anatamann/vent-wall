@@ -7,6 +7,29 @@ import UserVentsList from '../components/UserVentsList'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { ArrowLeft } from 'lucide-react'
 
+function ProfilePageHeader({
+  title,
+  onBack,
+}: {
+  title: string
+  onBack: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="btn-secondary inline-flex items-center gap-2 self-start"
+      >
+        <ArrowLeft className="w-4 h-4 shrink-0" />
+        <span className="hidden sm:inline">Back to Home</span>
+        <span className="sm:hidden">Back</span>
+      </button>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
+    </div>
+  )
+}
+
 export default function Profile() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
@@ -27,16 +50,7 @@ export default function Profile() {
   if (authLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
-        </div>
+        <ProfilePageHeader title="Profile" onBack={() => navigate('/')} />
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner size="lg" />
           <span className="ml-3 text-gray-600 dark:text-gray-400">Checking authentication...</span>
@@ -53,16 +67,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
-        </div>
+        <ProfilePageHeader title="Profile" onBack={() => navigate('/')} />
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner size="lg" />
           <span className="ml-3 text-gray-600 dark:text-gray-400">Loading your profile...</span>
@@ -74,16 +79,7 @@ export default function Profile() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
-        </div>
+        <ProfilePageHeader title="Profile" onBack={() => navigate('/')} />
         <div className="card text-center py-8">
           <p className="text-red-600 dark:text-red-400 mb-4">
             Failed to load profile: {error}
@@ -111,16 +107,7 @@ export default function Profile() {
     console.log('Profile: No user profile found')
     return (
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => navigate('/')}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Profile</h1>
-        </div>
+        <ProfilePageHeader title="Profile" onBack={() => navigate('/')} />
         <div className="card text-center py-8">
           <p className="text-gray-600 dark:text-gray-400">
             Profile not found. Please try signing out and signing back in.
@@ -147,16 +134,7 @@ export default function Profile() {
   return (
     <div className="space-y-8">
       {/* Header with Back Button */}
-      <div className="flex items-center space-x-4">
-        <button 
-          onClick={() => navigate('/')}
-          className="btn-secondary flex items-center space-x-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Your Profile</h1>
-      </div>
+      <ProfilePageHeader title="Your Profile" onBack={() => navigate('/')} />
 
       {/* Username Editor */}
       <UsernameEditor

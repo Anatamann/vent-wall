@@ -6,9 +6,9 @@ interface UserAvatarProps {
 }
 
 const sizeClasses = {
-  sm: 'w-8 h-8 text-sm',
-  md: 'w-10 h-10 text-base',
-  lg: 'w-16 h-16 text-xl',
+  sm: 'w-8 h-8 text-xs sm:text-sm',
+  md: 'w-10 h-10 text-sm sm:text-base',
+  lg: 'w-16 h-16 text-lg sm:text-xl',
 }
 
 export default function UserAvatar({

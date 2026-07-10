@@ -97,7 +97,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             <MessageSquarePlus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             <h2
               id="feedback-modal-title"
-              className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+              className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100"
             >
               Send Feedback
             </h2>
@@ -113,7 +113,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         </div>
 
         <div className="px-5 py-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
             Request a mood tag or share ideas for Vent Wall. One message per day.
           </p>
 
@@ -124,26 +124,26 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           ) : (
             <>
               {submittedToday && !success && (
-                <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 mb-4">
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200 mb-4">
                   You already sent feedback today. Come back tomorrow.
                 </div>
               )}
 
               {success && (
-                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-sm text-green-800 dark:text-green-200 mb-4">
+                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-xs sm:text-sm text-green-800 dark:text-green-200 mb-4">
                   Thanks — your feedback was sent to the team.
                 </div>
               )}
 
               {error && (
-                <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
                     htmlFor="tag-request"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Tag request
                   </label>
@@ -162,7 +162,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 <div>
                   <label
                     htmlFor="feedback-message"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Message
                   </label>

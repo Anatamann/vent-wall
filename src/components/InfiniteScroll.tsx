@@ -68,7 +68,7 @@ export default function InfiniteScroll({
       {/* End of content indicator */}
       {!hasMore && (
         <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
             You've reached the end! 🎉
           </p>
         </div>

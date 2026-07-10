@@ -70,11 +70,11 @@ export default function GifPicker({ onGifSelect, onClose, isOpen }: GifPickerPro
           )}
 
           {!loading && error && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center py-8">{error}</p>
+            <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 text-center py-8">{error}</p>
           )}
 
           {!loading && !error && items.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-8">
               No GIFs found. Try another search.
             </p>
           )}

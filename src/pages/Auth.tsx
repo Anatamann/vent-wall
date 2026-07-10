@@ -114,7 +114,7 @@ export default function Auth() {
 
     if (isCheckingUsername) {
       return (
-        <p className="mt-1.5 flex items-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1.5 flex items-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
           <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
           Checking availability...
         </p>
@@ -127,7 +127,7 @@ export default function Auth() {
 
     return (
       <p
-        className={`mt-1.5 flex items-center text-sm ${
+        className={`mt-1.5 flex items-center text-xs sm:text-sm${
           isPositive
             ? 'text-green-600 dark:text-green-400'
             : 'text-red-600 dark:text-red-400'
@@ -156,10 +156,10 @@ export default function Auth() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <MessageSquare className="mx-auto h-12 w-12 text-primary-600 dark:text-primary-400" />
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+          <h2 className="mt-6 text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             {isSignUp ? 'Join Vent Wall' : 'Welcome back'}
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {isSignUp
               ? 'Create your account to start sharing'
               : 'Sign in to your account'}
@@ -169,7 +169,7 @@ export default function Auth() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                 Username
               </label>
               <input
@@ -190,7 +190,7 @@ export default function Auth() {
 
             {isSignUp && (
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email address
                 </label>
                 <input
@@ -208,7 +208,7 @@ export default function Auth() {
             )}
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -239,7 +239,7 @@ export default function Auth() {
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md text-xs sm:text-sm">
               {error}
             </div>
           )}
@@ -268,7 +268,7 @@ export default function Auth() {
                 setError('')
                 setFormData({ username: '', password: '', email: '' })
               }}
-              className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 text-sm font-medium transition-colors"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 text-xs sm:text-sm font-medium transition-colors"
             >
               {isSignUp
                 ? 'Already have an account? Sign in'

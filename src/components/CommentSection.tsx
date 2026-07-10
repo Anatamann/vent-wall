@@ -94,23 +94,23 @@ export default function CommentSection({
 
   return (
     <section className="card">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <MessageCircle className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
             Comments
           </h2>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">
             ({comments.length})
           </span>
         </div>
 
         {commentsOpen && currentUserId && !disabled && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
             <button
               onClick={(e) => handleOpenPicker(e, 'emoji')}
               disabled={isSubmitting || atCommentLimit}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 atCommentLimit
                   ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50'
@@ -122,7 +122,7 @@ export default function CommentSection({
             <button
               onClick={(e) => handleOpenPicker(e, 'gif')}
               disabled={isSubmitting || atCommentLimit}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 atCommentLimit
                   ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                   : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50'
@@ -136,29 +136,29 @@ export default function CommentSection({
       </div>
 
       {!commentsOpen && (
-        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 px-4 py-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
           Comments closed — they were only available while this post was on the Wall.
         </div>
       )}
 
       {commentsOpen && !currentUserId && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
           Sign in to respond with an emoji or GIF.
         </p>
       )}
 
       {commentsOpen && currentUserId && atCommentLimit && (
-        <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+        <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 mb-4">
           Comment limit reached ({commentLimit}/{commentLimit} per post).
         </p>
       )}
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
       )}
 
       {comments.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
           {commentsOpen
             ? 'No comments yet. Be the first to respond with an emoji or GIF.'
             : 'No comments were left on this post.'}
@@ -175,7 +175,7 @@ export default function CommentSection({
                   username={comment.user?.username || 'Anonymous'}
                   status={comment.user?.status}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </p>
               </div>
@@ -189,7 +189,7 @@ export default function CommentSection({
                     loading="lazy"
                   />
                 ) : (
-                  <span className="text-3xl leading-none" aria-hidden="true">
+                  <span className="text-2xl sm:text-3xl leading-none" aria-hidden="true">
                     {comment.emoji}
                   </span>
                 )}
@@ -213,7 +213,7 @@ export default function CommentSection({
       />
 
       {isSubmitting && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Posting comment...</p>
+        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-3">Posting comment...</p>
       )}
     </section>
   )

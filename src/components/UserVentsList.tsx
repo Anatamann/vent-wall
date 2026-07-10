@@ -96,9 +96,13 @@ function VentCard({
         compact ? 'p-3' : 'p-4'
       }`}
     >
-      <div className={`flex items-center justify-between ${compact ? 'mb-2' : 'mb-3'}`}>
+      <div
+        className={`flex flex-wrap items-center justify-between gap-2 min-w-0 ${
+          compact ? 'mb-2' : 'mb-3'
+        }`}
+      >
         <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium shrink-0 ${
             onWall
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -107,7 +111,7 @@ function VentCard({
           {onWall ? 'On Wall' : 'Archived'}
         </span>
         {!onWall && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">Only visible to you</span>
+          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Only visible to you</span>
         )}
       </div>
 
@@ -140,7 +144,7 @@ function VentCard({
           {vent.mood_tags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+              className="inline-flex items-center px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium"
               style={{
                 backgroundColor: `${tag.color}20`,
                 color: tag.color,
@@ -154,34 +158,36 @@ function VentCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm gap-3">
-        <span className="text-gray-500 dark:text-gray-400">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm min-w-0">
+        <span className="text-gray-500 dark:text-gray-400 shrink-0">
           {vent.reactions?.length || 0} reactions
         </span>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex flex-col items-end gap-0.5 text-xs text-gray-500 dark:text-gray-400 text-right">
-            <span>{formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })}</span>
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto min-w-0">
+          <div className="flex flex-col items-start sm:items-end gap-0.5 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 min-w-0">
+            <span className="whitespace-nowrap">
+              {formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })}
+            </span>
             {onWall && (
-              <span>
+              <span className="truncate max-w-[12rem] sm:max-w-none">
                 Leaves Wall {formatDistanceToNow(new Date(vent.expires_at), { addSuffix: true })}
               </span>
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 shrink-0">
             {showDeleteConfirm === vent.id ? (
               <div className="flex items-center space-x-2">
                 <button
                   onClick={onCancelDelete}
-                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  className="px-2 py-1 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => onConfirmDelete(vent.id)}
                   disabled={deletingVent === vent.id}
-                  className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                  className="px-2 py-1 text-[10px] sm:text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                 >
                   {deletingVent === vent.id ? 'Deleting...' : 'Confirm'}
                 </button>
@@ -203,7 +209,7 @@ function VentCard({
         <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
           <div className="flex items-start space-x-2">
             <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm">
               <p className="text-red-800 dark:text-red-200 font-medium">Delete this vent?</p>
               <p className="text-red-700 dark:text-red-300 mt-1">
                 This permanently removes the vent from your profile and the Wall. This action cannot
@@ -287,7 +293,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
   if (loading) {
     return (
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Vents</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Vents</h2>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="animate-pulse">
@@ -309,7 +315,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
       <div className="card text-center py-8">
         <div className="text-gray-400 dark:text-gray-500 mb-4">
           <MoreHorizontal className="w-12 h-12 mx-auto mb-2" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No vents yet</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No vents yet</h3>
           <p className="text-gray-600 dark:text-gray-400">
             Your vents will appear here. They stay on the Wall for 24 hours, then move to your
             private archive.
@@ -322,8 +328,8 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
   return (
     <div className="card">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Vents</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Your Vents</h2>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
           {onWallVents.length} on Wall · {archivedVents.length} archived
         </p>
       </div>
@@ -332,7 +338,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
         <button
           type="button"
           onClick={() => setActiveTab('posts')}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-xs sm:text-sm font-medium transition-colors ${
             activeTab === 'posts'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-b-0 border-gray-200 dark:border-gray-700 -mb-[1px]'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -344,7 +350,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
         <button
           type="button"
           onClick={() => setActiveTab('search')}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-xs sm:text-sm font-medium transition-colors ${
             activeTab === 'search'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-b-0 border-gray-200 dark:border-gray-700 -mb-[1px]'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -359,7 +365,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
         <div className="space-y-8">
           {onWallVents.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary-500" />
                 On the Wall
               </h3>
@@ -373,7 +379,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
 
           {archivedByDate.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 Archive
               </h3>
               <div className="space-y-2">
@@ -399,7 +405,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
                             {heading}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-3">
+                        <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-3">
                           {dateVents.length} {dateVents.length === 1 ? 'vent' : 'vents'}
                         </span>
                       </button>
@@ -425,7 +431,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
           )}
 
           {onWallVents.length === 0 && archivedByDate.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-6">
               No vents match the current view.
             </p>
           )}
@@ -462,7 +468,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2"
+                  className="btn-secondary inline-flex items-center gap-1.5 text-xs sm:text-sm py-2"
                 >
                   <X className="w-4 h-4" />
                   Clear
@@ -472,7 +478,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
 
             {availableDates.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">
+                <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 self-center mr-1">
                   Quick dates:
                 </span>
                 {availableDates.slice(0, 6).map((dateKey) => (
@@ -480,7 +486,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
                     key={dateKey}
                     type="button"
                     onClick={() => setFilterDate(filterDate === dateKey ? '' : dateKey)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors ${
                       filterDate === dateKey
                         ? 'bg-primary-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -494,7 +500,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
           </div>
 
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">
               {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
               {searchQuery && (
                 <span>
@@ -514,7 +520,7 @@ export default function UserVentsList({ vents, onDeleteVent, loading = false }: 
             {searchResults.length === 0 ? (
               <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                 <Search className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No vents match your search.</p>
+                <p className="text-xs sm:text-sm">No vents match your search.</p>
               </div>
             ) : (
               <div className="space-y-4">

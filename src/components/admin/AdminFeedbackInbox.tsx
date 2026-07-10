@@ -58,7 +58,7 @@ export default function AdminFeedbackInbox() {
             key={option.value}
             type="button"
             onClick={() => setStatus(option.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
               status === option.value
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -76,7 +76,7 @@ export default function AdminFeedbackInbox() {
       )}
 
       {!loading && error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       {!loading && !error && items.length === 0 && (
@@ -94,26 +94,26 @@ export default function AdminFeedbackInbox() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
                     {item.username || 'User'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                     {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                   </p>
                 </div>
-                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
                   {item.status}
                 </span>
               </div>
 
               {item.tag_request && (
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-2">
                   <span className="font-medium text-gray-900 dark:text-gray-100">Tag request:</span>{' '}
                   {item.tag_request}
                 </p>
               )}
 
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                 {item.message}
               </p>
 
@@ -124,7 +124,7 @@ export default function AdminFeedbackInbox() {
                     type="button"
                     disabled={updatingId === item.id || item.status === next}
                     onClick={() => updateStatus(item.id, next)}
-                    className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+                    className="btn-secondary text-[10px] sm:text-xs py-1 px-2 disabled:opacity-50"
                   >
                     Mark {next}
                   </button>

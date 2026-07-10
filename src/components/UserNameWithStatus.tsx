@@ -7,16 +7,16 @@ interface UserNameWithStatusProps {
 export default function UserNameWithStatus({
   username,
   status,
-  usernameClassName = 'text-sm font-medium text-gray-900 dark:text-gray-100',
+  usernameClassName = 'text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100',
 }: UserNameWithStatusProps) {
   const name = username.trim() || 'Anonymous'
   const trimmedStatus = status?.trim()
 
   return (
-    <div>
-      <p className={`${usernameClassName} break-words`}>{name}</p>
+    <div className="min-w-0">
+      <p className={`${usernameClassName} truncate`}>{name}</p>
       {trimmedStatus && (
-        <p className="mt-0.5 text-[11px] leading-snug text-gray-600 dark:text-gray-300 break-words">
+        <p className="mt-0.5 text-[11px] sm:text-sm leading-snug text-gray-600 dark:text-gray-300 truncate">
           {trimmedStatus}
         </p>
       )}

@@ -83,15 +83,15 @@ export default function ReactionButton({
 
   return (
     <div className="overflow-hidden">
-      <div className="flex items-center space-x-2">
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
       {/* Existing Reactions */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
         {Object.entries(reactionGroups).map(([emoji, data]) => (
           <button
             key={emoji}
             onClick={() => handleReactionClick(emoji, data.hasUserReacted)}
             disabled={disabled}
-            className={`inline-flex items-center space-x-1 px-2 py-1.5 rounded-full text-sm transition-all duration-200 ${
+            className={`inline-flex items-center space-x-1 px-2 py-1.5 rounded-full text-xs sm:text-sm transition-all duration-200 ${
               data.hasUserReacted
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-300 dark:border-primary-600'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-transparent'
@@ -99,7 +99,7 @@ export default function ReactionButton({
             title={`${data.count} reaction${data.count !== 1 ? 's' : ''}`}
           >
             <span>{emoji}</span>
-            <span className="text-xs font-medium">{data.count}</span>
+            <span className="text-[10px] sm:text-xs font-medium">{data.count}</span>
           </button>
         ))}
       </div>
@@ -126,7 +126,7 @@ export default function ReactionButton({
       </div>
 
       {limitMessage && (
-        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+        <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 mt-1">
           {limitMessage}
         </p>
       )}

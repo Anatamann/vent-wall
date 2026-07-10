@@ -113,8 +113,8 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
             Share Your Vent
           </h2>
           <button
@@ -125,19 +125,19 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           <div>
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="content"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 What's on your mind?
               </label>
               <button
                 type="button"
                 onClick={() => setShowGifPicker(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <Image className="w-4 h-4" />
                 Add GIF
@@ -150,7 +150,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
               onChange={(e) => setContent(e.target.value)}
               placeholder="Share your thoughts, feelings, or experiences…"
               rows={4}
-              className={`w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 transition-colors ${
+              className={`text-xs sm:text-sm w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 transition-colors ${
                 isOverLimit
                   ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500'
@@ -181,11 +181,11 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
             )}
 
             <div className="flex justify-between items-center mt-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 Text optional when a GIF is attached
               </p>
               <span
-                className={`text-sm ${
+                className={`text-xs sm:text-sm${
                   isOverLimit
                     ? 'text-red-500 dark:text-red-400'
                     : characterCount > 450
@@ -199,20 +199,20 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               How are you feeling? (Select 1-3 tags)
             </label>
 
             {selectedTags.length > 0 && (
               <div className="mb-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Selected:</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">Selected:</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedTagObjects.map((tag) => (
                     <button
                       key={tag.id}
                       type="button"
                       onClick={() => handleTagToggle(tag.id)}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 transition-all duration-200"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border-2 transition-all duration-200"
                       style={{
                         backgroundColor: `${tag.color}20`,
                         color: tag.color,
@@ -234,7 +234,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
                 placeholder="Search mood tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="text-xs sm:text-sm w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
 
@@ -250,7 +250,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
                       type="button"
                       onClick={() => canSelect && handleTagToggle(tag.id)}
                       disabled={!canSelect && !isSelected}
-                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
                         isSelected
                           ? 'opacity-50 cursor-not-allowed'
                           : canSelect
@@ -276,13 +276,13 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
               )}
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-2">
               {selectedTags.length}/3 tags selected
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md text-xs sm:text-sm">
               {error}
             </div>
           )}

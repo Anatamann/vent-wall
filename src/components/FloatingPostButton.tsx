@@ -11,7 +11,7 @@ export default function FloatingPostButton({ onClick, disabled = false }: Floati
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg transition-all duration-300 z-40 ${
+      className={`fixed bottom-4 right-3 sm:bottom-6 sm:right-6 w-11 h-11 sm:w-14 sm:h-14 rounded-full shadow-md sm:shadow-lg transition-all duration-300 z-40 ${
         disabled
           ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
           : 'bg-primary-600 dark:bg-primary-500 hover:bg-primary-700 dark:hover:bg-primary-600 hover:scale-110 active:scale-95'
@@ -19,7 +19,7 @@ export default function FloatingPostButton({ onClick, disabled = false }: Floati
       aria-label="Create new vent"
     >
       <Plus 
-        className={`w-6 h-6 text-white mx-auto transition-transform duration-200 ${
+        className={`w-5 h-5 sm:w-6 sm:h-6 text-white mx-auto transition-transform duration-200 ${
           disabled ? 'opacity-60' : 'group-hover:rotate-90'
         }`} 
       />

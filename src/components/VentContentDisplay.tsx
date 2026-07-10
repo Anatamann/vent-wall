@@ -43,7 +43,7 @@ export default function VentContentDisplay({
       {hasText && (
         <p
           className={`${textClassName} ${
-            compact ? 'text-sm line-clamp-3 whitespace-pre-wrap break-words' : 'text-lg whitespace-pre-wrap break-words'
+            compact ? 'text-xs sm:text-sm line-clamp-3 whitespace-pre-wrap break-words' : 'text-base sm:text-lg whitespace-pre-wrap break-words'
           }`}
         >
           {compact ? preview : trimmed}
@@ -51,7 +51,7 @@ export default function VentContentDisplay({
       )}
 
       {showReadMore && isTruncated && (
-        <p className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+        <p className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-medium">
           Read full post →
         </p>
       )}

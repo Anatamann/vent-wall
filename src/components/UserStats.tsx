@@ -50,7 +50,7 @@ export default function UserStats({ stats }: UserStatsProps) {
 
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
         Your Statistics
       </h2>
 
@@ -61,20 +61,20 @@ export default function UserStats({ stats }: UserStatsProps) {
             <div className={`w-12 h-12 ${item.bgColor} rounded-full flex items-center justify-center mx-auto mb-2`}>
               <item.icon className={`w-6 h-6 ${item.color}`} />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
               {typeof item.value === 'number' && item.value % 1 !== 0 
                 ? item.value.toFixed(1) 
                 : item.value
               }
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{item.label}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{item.label}</p>
           </div>
         ))}
       </div>
 
       {/* Timeline Info */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
             <span>Joined {joinedAgo}</span>

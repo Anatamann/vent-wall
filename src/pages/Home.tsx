@@ -89,13 +89,13 @@ export default function Home() {
     <div className="space-y-6">
       {/* Quick Actions Bar */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <button
             onClick={() => setIsAdvancedSearchOpen(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <Search className="w-4 h-4" />
-            <span className="text-sm font-medium">Advanced Search</span>
+            <span className="text-xs sm:text-sm font-medium">Advanced Search</span>
           </button>
           
           <button
@@ -107,7 +107,7 @@ export default function Home() {
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-medium">Trending</span>
+            <span className="text-xs sm:text-sm font-medium">Trending</span>
           </button>
         </div>
       </div>
