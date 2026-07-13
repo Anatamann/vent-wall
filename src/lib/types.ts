@@ -98,6 +98,12 @@ export interface GlobeVentSummary {
   slug: string
   content: string
   created_at: string
+  user: {
+    id: string
+    username: string
+    status: string | null
+    avatar_url: string | null
+  }
   mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
   engagement_count: number
   reaction_count: number

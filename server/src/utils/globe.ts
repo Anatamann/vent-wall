@@ -9,6 +9,7 @@ import {
   STATE_CENTERS,
   resolveRegionCenter,
 } from '../data/state-centers.js'
+import { buildAvatarUrl } from './avatar-assets.js'
 
 export interface GlobeRegionPoint {
   regionKey: string
@@ -32,11 +33,81 @@ export interface GlobeVentSummary {
   slug: string
   content: string
   created_at: string
+  user: {
+    id: string
+    username: string
+    status: string | null
+    avatar_url: string | null
+  }
   mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
   engagement_count: number
   reaction_count: number
   comment_count: number
 }
+
+type GlobeVentRow = {
+  id: string
+  slug: string
+  content: string
+  created_at: string
+  user_id: string
+  username: string
+  status: string | null
+  avatar_path: string | null
+  avatar_updated_at: string | null
+  mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
+  reaction_count: number
+  comment_count: number
+  country?: string | null
+  state?: string | null
+}
+
+function mapGlobeVentRow(row: GlobeVentRow): GlobeVentSummary {
+  return {
+    id: row.id,
+    slug: row.slug,
+    content: row.content,
+    created_at: row.created_at,
+    user: {
+      id: row.user_id,
+      username: row.username || 'Anonymous',
+      status: row.status ?? null,
+      avatar_url: buildAvatarUrl(row.user_id, row.avatar_path, row.avatar_updated_at),
+    },
+    mood_tags: Array.isArray(row.mood_tags) ? row.mood_tags : [],
+    reaction_count: row.reaction_count,
+    comment_count: row.comment_count,
+    engagement_count: row.reaction_count + row.comment_count,
+  }
+}
+
+const GLOBE_VENT_SELECT = `
+  v.id,
+  v.slug,
+  COALESCE(v.content, '') AS content,
+  v.created_at,
+  v.user_id,
+  u.username,
+  u.status,
+  u.avatar_path,
+  u.avatar_updated_at,
+  COALESCE(
+    (
+      SELECT json_agg(jsonb_build_object(
+        'id', mt.id,
+        'name', mt.name,
+        'color', mt.color,
+        'emoji', mt.emoji
+      ) ORDER BY mt.name)
+      FROM vent_tags vt
+      INNER JOIN mood_tags mt ON mt.id = vt.tag_id
+      WHERE vt.vent_id = v.id
+    ),
+    '[]'::json
+  ) AS mood_tags,
+  (SELECT COUNT(*)::int FROM reactions r WHERE r.vent_id = v.id) AS reaction_count,
+  (SELECT COUNT(*)::int FROM vent_comments c WHERE c.vent_id = v.id) AS comment_count
+`
 
 function clampHours(raw: unknown): number {
   const n = Number(raw)
@@ -226,41 +297,13 @@ export async function fetchGlobeVentsForRegion(
     return { regionKey, header: regionKey, vents: [] }
   }
 
-  const result = await query<{
-    id: string
-    slug: string
-    content: string
-    created_at: string
-    mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
-    reaction_count: number
-    comment_count: number
-    country: string | null
-    state: string | null
-  }>(
+  const result = await query<GlobeVentRow & { country: string | null; state: string | null }>(
     `SELECT
-       v.id,
-       v.slug,
-       COALESCE(v.content, '') AS content,
-       v.created_at,
+       ${GLOBE_VENT_SELECT},
        v.location_country AS country,
-       v.location_state AS state,
-       COALESCE(
-         (
-           SELECT json_agg(jsonb_build_object(
-             'id', mt.id,
-             'name', mt.name,
-             'color', mt.color,
-             'emoji', mt.emoji
-           ) ORDER BY mt.name)
-           FROM vent_tags vt
-           INNER JOIN mood_tags mt ON mt.id = vt.tag_id
-           WHERE vt.vent_id = v.id
-         ),
-         '[]'::json
-       ) AS mood_tags,
-       (SELECT COUNT(*)::int FROM reactions r WHERE r.vent_id = v.id) AS reaction_count,
-       (SELECT COUNT(*)::int FROM vent_comments c WHERE c.vent_id = v.id) AS comment_count
+       v.location_state AS state
      FROM vents v
+     INNER JOIN users u ON u.id = v.user_id
      WHERE v.contribute_to_globe = true
        AND v.created_at > now() - make_interval(hours => $1)
        AND v.location_lat IS NOT NULL
@@ -275,17 +318,7 @@ export async function fetchGlobeVentsForRegion(
     [hours, parsed.countryCode, parsed.state, limit]
   )
 
-  const vents: GlobeVentSummary[] = result.rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    content: row.content,
-    created_at: row.created_at,
-    mood_tags: Array.isArray(row.mood_tags) ? row.mood_tags : [],
-    reaction_count: row.reaction_count,
-    comment_count: row.comment_count,
-    engagement_count: row.reaction_count + row.comment_count,
-  }))
-
+  const vents = result.rows.map(mapGlobeVentRow)
   const sample = result.rows[0]
   const headerParts = [sample?.state, sample?.country].filter(Boolean)
   const header = headerParts.length > 0 ? headerParts.join(', ') : regionKey
@@ -313,37 +346,11 @@ export async function fetchGlobeVentsForMood(
     return { tagId, tagName: null, tagEmoji: null, tagColor: null, vents: [] }
   }
 
-  const result = await query<{
-    id: string
-    slug: string
-    content: string
-    created_at: string
-    mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
-    reaction_count: number
-    comment_count: number
-  }>(
+  const result = await query<GlobeVentRow>(
     `SELECT
-       v.id,
-       v.slug,
-       COALESCE(v.content, '') AS content,
-       v.created_at,
-       COALESCE(
-         (
-           SELECT json_agg(jsonb_build_object(
-             'id', mt.id,
-             'name', mt.name,
-             'color', mt.color,
-             'emoji', mt.emoji
-           ) ORDER BY mt.name)
-           FROM vent_tags vt2
-           INNER JOIN mood_tags mt ON mt.id = vt2.tag_id
-           WHERE vt2.vent_id = v.id
-         ),
-         '[]'::json
-       ) AS mood_tags,
-       (SELECT COUNT(*)::int FROM reactions r WHERE r.vent_id = v.id) AS reaction_count,
-       (SELECT COUNT(*)::int FROM vent_comments c WHERE c.vent_id = v.id) AS comment_count
+       ${GLOBE_VENT_SELECT}
      FROM vents v
+     INNER JOIN users u ON u.id = v.user_id
      INNER JOIN vent_tags vt ON vt.vent_id = v.id AND vt.tag_id = $2
      WHERE v.contribute_to_globe = true
        AND v.created_at > now() - make_interval(hours => $1)
@@ -354,16 +361,7 @@ export async function fetchGlobeVentsForMood(
     [hours, tagId, limit]
   )
 
-  const vents: GlobeVentSummary[] = result.rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    content: row.content,
-    created_at: row.created_at,
-    mood_tags: Array.isArray(row.mood_tags) ? row.mood_tags : [],
-    reaction_count: row.reaction_count,
-    comment_count: row.comment_count,
-    engagement_count: row.reaction_count + row.comment_count,
-  }))
+  const vents = result.rows.map(mapGlobeVentRow)
 
   return {
     tagId,
