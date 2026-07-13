@@ -1,11 +1,7 @@
-import { Link } from 'react-router-dom'
-import { formatDistanceToNow } from 'date-fns'
-import { X, MessageCircle, Heart } from 'lucide-react'
+import { X } from 'lucide-react'
 import type { GlobeVentSummary } from '../lib/types'
 import LoadingSpinner from './LoadingSpinner'
-import UserAvatar from './UserAvatar'
-import UserNameWithStatus from './UserNameWithStatus'
-import MoodTagChip from './MoodTagChip'
+import VentCard from './VentCard'
 
 export interface GlobePopupContext {
   title: string
@@ -21,80 +17,6 @@ interface GlobePopupProps {
   loading: boolean
   error: string | null
   onClose: () => void
-}
-
-function previewText(content: string, max = 160): string {
-  const trimmed = content.trim()
-  if (!trimmed) return 'GIF vent'
-  if (trimmed.length <= max) return trimmed
-  return `${trimmed.slice(0, max).trimEnd()}…`
-}
-
-function GlobeVentCard({ vent }: { vent: GlobeVentSummary }) {
-  const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
-  const username = vent.user?.username || 'Anonymous'
-  const tags = vent.mood_tags || []
-
-  return (
-    <Link
-      to={`/post/${vent.slug}`}
-      className="group rounded-xl border border-white/10 bg-slate-800/60 p-4 shadow-sm flex flex-col h-full
-        no-underline text-inherit
-        hover:border-sky-400/30 hover:bg-slate-800/90 hover:shadow-[0_0_20px_rgba(56,189,248,0.08)]
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50
-        transition-all"
-    >
-      {/* Author row — same pattern as Vent Wall cards */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center space-x-2 min-w-0">
-          <UserAvatar
-            username={username}
-            avatarUrl={vent.user?.avatar_url}
-            size="sm"
-          />
-          <UserNameWithStatus
-            username={username}
-            status={vent.user?.status}
-            usernameClassName="text-xs sm:text-sm font-medium text-slate-100 truncate"
-          />
-        </div>
-        <p className="text-[10px] sm:text-xs text-slate-500 shrink-0">{timeAgo}</p>
-      </div>
-
-      {/* Preview */}
-      <div className="mb-3 flex-grow min-w-0">
-        <p className="text-xs sm:text-sm text-slate-100 leading-relaxed">
-          {previewText(vent.content)}
-        </p>
-      </div>
-
-      {/* All mood tags — standard chip design */}
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {tags.map((tag) => (
-            <MoodTagChip key={tag.id} tag={tag} static />
-          ))}
-        </div>
-      )}
-
-      {/* Footer: engagement + full vent cue */}
-      <div className="flex items-center justify-between gap-2 pt-3 mt-auto border-t border-white/10 text-[11px] sm:text-xs text-slate-400">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1" title="Total engagement">
-            <Heart className="w-3.5 h-3.5" />
-            {vent.engagement_count}
-          </span>
-          <span className="inline-flex items-center gap-1" title="Comments">
-            <MessageCircle className="w-3.5 h-3.5" />
-            {vent.comment_count}
-          </span>
-        </div>
-        <span className="font-medium text-sky-400/90 group-hover:text-sky-300 transition-colors shrink-0">
-          View full vent
-        </span>
-      </div>
-    </Link>
-  )
 }
 
 export default function GlobePopup({
@@ -183,7 +105,7 @@ export default function GlobePopup({
           {!loading && !error && vents.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {vents.map((vent) => (
-                <GlobeVentCard key={vent.id} vent={vent} />
+                <VentCard key={vent.id} vent={vent} animateOnScroll={false} />
               ))}
             </div>
           )}

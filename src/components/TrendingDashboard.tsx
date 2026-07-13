@@ -1,6 +1,7 @@
 import { TrendingUp, Clock, Zap, BarChart3 } from 'lucide-react'
 import { useTrendingAnalysis } from '../hooks/useTrendingAnalysis'
 import LoadingSpinner from './LoadingSpinner'
+import ActiveHoursChart from './ActiveHoursChart'
 
 export default function TrendingDashboard() {
   const { analysis, loading, error } = useTrendingAnalysis()
@@ -24,13 +25,6 @@ export default function TrendingDashboard() {
         </div>
       </div>
     )
-  }
-
-  const formatHour = (hour: number) => {
-    if (hour === 0) return '12 AM'
-    if (hour === 12) return '12 PM'
-    if (hour < 12) return `${hour} AM`
-    return `${hour - 12} PM`
   }
 
   return (
@@ -110,33 +104,16 @@ export default function TrendingDashboard() {
       </div>
 
       <div className="glass-panel p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-4 flex items-center">
-          <Clock className="w-5 h-5 mr-2 text-violet-400" />
-          Most Active Hours
-        </h3>
-        <div className="space-y-2">
-          {analysis.peakHours.map((hour) => {
-            const maxCount = analysis.peakHours[0]?.count || 1
-            const percentage = (hour.count / maxCount) * 100
-
-            return (
-              <div key={hour.hour} className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="text-xs sm:text-sm font-medium text-slate-300 w-12 sm:w-16 shrink-0">
-                  {formatHour(hour.hour)}
-                </span>
-                <div className="flex-1 min-w-0 bg-slate-800/80 rounded-full h-2 overflow-hidden border border-white/5">
-                  <div
-                    className="bg-violet-500 h-2 rounded-full transition-all duration-300 max-w-full"
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-                <span className="text-xs sm:text-sm text-slate-400 w-6 sm:w-8 shrink-0 text-right tabular-nums">
-                  {hour.count}
-                </span>
-              </div>
-            )
-          })}
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center">
+            <Clock className="w-5 h-5 mr-2 text-violet-400" />
+            Most Active Hours
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-500">
+            Vents by hour (last 7 days on the Wall)
+          </p>
         </div>
+        <ActiveHoursChart data={analysis.peakHours} height={200} />
       </div>
     </div>
   )
