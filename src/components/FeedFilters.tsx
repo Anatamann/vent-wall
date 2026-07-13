@@ -1,82 +1,48 @@
-import React from 'react'
-import { Calendar, TrendingUp, Clock, Filter } from 'lucide-react'
+import { TrendingUp, Clock, Filter } from 'lucide-react'
 
 export type SortOption = 'newest' | 'oldest' | 'most_reactions' | 'trending'
+/** @deprecated Time filter removed from UI; kept for API compatibility with default 'all'. */
 export type TimeFilter = 'all' | 'today' | 'week' | 'month'
 
 interface FeedFiltersProps {
   sortBy: SortOption
-  timeFilter: TimeFilter
   onSortChange: (sort: SortOption) => void
-  onTimeFilterChange: (filter: TimeFilter) => void
   totalCount: number
 }
 
-export default function FeedFilters({
-  sortBy,
-  timeFilter,
-  onSortChange,
-  onTimeFilterChange,
-  totalCount
-}: FeedFiltersProps) {
+export default function FeedFilters({ sortBy, onSortChange, totalCount }: FeedFiltersProps) {
   const sortOptions: { value: SortOption; label: string; icon: React.ReactNode }[] = [
     { value: 'newest', label: 'Newest First', icon: <Clock className="w-4 h-4" /> },
     { value: 'oldest', label: 'Oldest First', icon: <Clock className="w-4 h-4 rotate-180" /> },
     { value: 'most_reactions', label: 'Most Reactions', icon: <TrendingUp className="w-4 h-4" /> },
-    { value: 'trending', label: 'Trending', icon: <TrendingUp className="w-4 h-4" /> }
-  ]
-
-  const timeOptions: { value: TimeFilter; label: string }[] = [
-    { value: 'all', label: 'All Time' },
-    { value: 'today', label: 'Today' },
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' }
+    { value: 'trending', label: 'Trending', icon: <TrendingUp className="w-4 h-4" /> },
   ]
 
   return (
-    <div className="card mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {/* Results Count */}
+    <div className="glass-panel mb-6 px-4 py-3 sm:px-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <span className="text-xs sm:text-sm text-slate-400">
             {totalCount} vent{totalCount !== 1 ? 's' : ''} found
           </span>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Time Filter */}
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <select
-              value={timeFilter}
-              onChange={(e) => onTimeFilterChange(e.target.value as TimeFilter)}
-              className="text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              {timeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sort Options */}
-          <div className="flex items-center space-x-2">
-            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Sort:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => onSortChange(e.target.value as SortOption)}
-              className="text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm text-slate-500">Sort</span>
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as SortOption)}
+            className="text-xs sm:text-sm rounded-full border border-white/10 bg-slate-800/80 text-slate-200
+              px-3 py-1.5 backdrop-blur-sm
+              focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400/40"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value} className="bg-slate-900 text-slate-100">
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

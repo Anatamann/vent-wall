@@ -5,6 +5,7 @@ import type { GlobeVentSummary } from '../lib/types'
 import LoadingSpinner from './LoadingSpinner'
 import UserAvatar from './UserAvatar'
 import UserNameWithStatus from './UserNameWithStatus'
+import MoodTagChip from './MoodTagChip'
 
 export interface GlobePopupContext {
   title: string
@@ -67,24 +68,11 @@ function GlobeVentCard({ vent }: { vent: GlobeVentSummary }) {
         </p>
       </div>
 
-      {/* All mood tags used on this vent */}
+      {/* All mood tags — standard chip design */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium"
-              style={{
-                backgroundColor: `${tag.color}22`,
-                color: tag.color,
-                border: `1px solid ${tag.color}45`,
-              }}
-            >
-              <span className="mr-1" aria-hidden>
-                {tag.emoji}
-              </span>
-              {tag.name}
-            </span>
+            <MoodTagChip key={tag.id} tag={tag} static />
           ))}
         </div>
       )}

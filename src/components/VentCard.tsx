@@ -6,6 +6,7 @@ import type { Vent } from '../lib/types'
 import UserAvatar from './UserAvatar'
 import UserNameWithStatus from './UserNameWithStatus'
 import VentContentDisplay from './VentContentDisplay'
+import MoodTagChip from './MoodTagChip'
 
 interface VentCardProps {
   vent: Vent
@@ -16,6 +17,7 @@ export default function VentCard({ vent }: VentCardProps) {
   const [isVisible, setIsVisible] = useState(false)
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
   const reactionCount = vent.reactions?.length || 0
+  const tags = vent.mood_tags || []
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -46,7 +48,7 @@ export default function VentCard({ vent }: VentCardProps) {
     <Link
       to={`/post/${vent.slug}`}
       ref={cardRef}
-      className={`card vent-card-hover vent-card-enter overflow-hidden h-full flex flex-col block no-underline ${
+      className={`glass-card vent-card-hover vent-card-enter overflow-hidden h-full flex flex-col block no-underline ${
         isVisible ? 'vent-card-visible' : ''
       }`}
     >
@@ -60,52 +62,37 @@ export default function VentCard({ vent }: VentCardProps) {
           <UserNameWithStatus
             username={vent.user?.username || 'Anonymous'}
             status={vent.user?.status}
-            usernameClassName="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+            usernameClassName="text-xs sm:text-sm font-medium text-slate-100 truncate"
           />
         </div>
-        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">{timeAgo}</p>
+        <p className="text-[10px] sm:text-xs text-slate-500 shrink-0">{timeAgo}</p>
       </div>
 
-      <div className="mb-4 flex-grow">
+      <div className="mb-3 flex-grow">
         <VentContentDisplay
           content={vent.content}
           asset={vent.asset}
           compact
           showReadMore
+          textClassName="text-slate-200 leading-relaxed"
         />
       </div>
 
-      {vent.mood_tags && vent.mood_tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {vent.mood_tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: `${tag.color}20`,
-                color: tag.color,
-                border: `1px solid ${tag.color}40`,
-              }}
-            >
-              <span className="mr-1">{tag.emoji}</span>
-              {tag.name}
-            </span>
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {tags.map((tag) => (
+            <MoodTagChip key={tag.id} tag={tag} static />
           ))}
-          {vent.mood_tags.length > 2 && (
-            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 self-center">
-              +{vent.mood_tags.length - 2}
-            </span>
-          )}
         </div>
       )}
 
-      <div className="flex items-center gap-4 pt-3 mt-auto border-t border-gray-100 dark:border-gray-700 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-4 pt-3 mt-auto border-t border-white/10 text-xs sm:text-sm text-slate-400">
         {reactionCount > 0 && (
           <span>
             {reactionCount} reaction{reactionCount !== 1 ? 's' : ''}
           </span>
         )}
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 text-sky-400/90">
           <MessageCircle className="w-4 h-4" />
           View post
         </span>

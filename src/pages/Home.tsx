@@ -15,7 +15,7 @@ import { useMoodTags } from '../hooks/useMoodTags'
 import { usePostLimits } from '../hooks/usePostLimits'
 import { useAuth } from '../hooks/useAuth'
 import { Search, TrendingUp } from 'lucide-react'
-import type { SortOption, TimeFilter } from '../components/FeedFilters'
+import type { SortOption } from '../components/FeedFilters'
 
 type HomeView = 'wall' | 'globe'
 
@@ -28,7 +28,6 @@ export default function Home() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('newest')
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all')
 
   const { tags, loading: tagsLoading } = useMoodTags()
   const {
@@ -42,7 +41,7 @@ export default function Home() {
   } = useRealtimeVents({
     selectedTags,
     sortBy,
-    timeFilter,
+    timeFilter: 'all',
   })
   const { canPost, refresh: refreshPostLimits } = usePostLimits()
 
@@ -76,22 +75,23 @@ export default function Home() {
         error,
         selectedTags,
         sortBy,
-        timeFilter,
       })
     }
-  }, [view, vents.length, ventsLoading, error, selectedTags, sortBy, timeFilter])
+  }, [view, vents.length, ventsLoading, error, selectedTags, sortBy])
 
-  // Concept UI: full dark shell while exploring the globe
+  // Shared dark shell: wall scrolls; globe is full-viewport locked
   useEffect(() => {
     document.body.classList.toggle('globe-view-active', view === 'globe')
-    return () => document.body.classList.remove('globe-view-active')
+    document.body.classList.toggle('wall-view-active', view === 'wall')
+    return () => {
+      document.body.classList.remove('globe-view-active', 'wall-view-active')
+    }
   }, [view])
 
   const handleAdvancedSearch = (filters: unknown) => {
     console.log('Advanced search filters:', filters)
   }
 
-  // Full-viewport globe: fills main under header; switcher/tags overlay the stage
   if (view === 'globe') {
     return (
       <div className="relative h-full w-full min-h-0 overflow-hidden">
@@ -107,31 +107,32 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6">
-      <ViewSwitcher view={view} onChange={setView} variant="light" />
+    <div className="space-y-5 sm:space-y-6">
+      <ViewSwitcher view={view} onChange={setView} variant="dark" />
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => setIsAdvancedSearchOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <Search className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-medium">Advanced Search</span>
-          </button>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <button
+          onClick={() => setIsAdvancedSearchOpen(true)}
+          className="flex items-center space-x-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium
+            border border-white/10 bg-slate-800/70 text-slate-200 backdrop-blur-sm
+            hover:border-sky-400/30 hover:bg-slate-700/80 transition-colors"
+        >
+          <Search className="w-4 h-4" />
+          <span>Advanced Search</span>
+        </button>
 
-          <button
-            onClick={() => setShowTrending(!showTrending)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+        <button
+          onClick={() => setShowTrending(!showTrending)}
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium
+            border backdrop-blur-sm transition-colors ${
               showTrending
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ? 'border-sky-400/40 bg-sky-500/15 text-sky-100'
+                : 'border-white/10 bg-slate-800/70 text-slate-200 hover:border-sky-400/30 hover:bg-slate-700/80'
             }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span className="text-xs sm:text-sm font-medium">Trending</span>
-          </button>
-        </div>
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>Trending</span>
+        </button>
       </div>
 
       {showTrending && <TrendingDashboard />}
@@ -145,13 +146,7 @@ export default function Home() {
         loading={tagsLoading}
       />
 
-      <FeedFilters
-        sortBy={sortBy}
-        timeFilter={timeFilter}
-        onSortChange={setSortBy}
-        onTimeFilterChange={setTimeFilter}
-        totalCount={filteredVentsCount}
-      />
+      <FeedFilters sortBy={sortBy} onSortChange={setSortBy} totalCount={filteredVentsCount} />
 
       <VentsFeed
         vents={vents}

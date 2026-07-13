@@ -20,21 +20,21 @@ const GRID_CLASS =
 
 function VentCardSkeleton() {
   return (
-    <div className="card animate-pulse h-full">
+    <div className="glass-card animate-pulse h-full">
       <div className="flex items-center space-x-3 mb-4">
-        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        <div className="w-8 h-8 bg-slate-700/80 rounded-full" />
         <div className="space-y-2">
-          <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24" />
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-16" />
+          <div className="h-4 bg-slate-700/80 rounded w-24" />
+          <div className="h-3 bg-slate-700/60 rounded w-16" />
         </div>
       </div>
       <div className="space-y-2 mb-4">
-        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
+        <div className="h-4 bg-slate-700/70 rounded w-full" />
+        <div className="h-4 bg-slate-700/50 rounded w-3/4" />
       </div>
       <div className="flex space-x-2">
-        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-16" />
-        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20" />
+        <div className="h-6 bg-slate-700/60 rounded-full w-16" />
+        <div className="h-6 bg-slate-700/60 rounded-full w-20" />
       </div>
     </div>
   )
@@ -59,33 +59,29 @@ export default function VentsFeed({
         error.toLowerCase().includes('invalid tag'))
 
     return (
-      <div className="card text-center py-12">
+      <div className="glass-panel text-center py-12 px-4">
         <MessageSquare
           className={`w-16 h-16 mx-auto mb-4 ${
-            isTagFilterError
-              ? 'text-gray-400 dark:text-gray-500'
-              : 'text-red-500 dark:text-red-400'
+            isTagFilterError ? 'text-slate-500' : 'text-red-400'
           }`}
         />
         {isTagFilterError ? (
           <>
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              No vents yet
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <h3 className="text-base sm:text-lg font-medium text-slate-100 mb-2">No vents yet</h3>
+            <p className="text-slate-400 mb-6">
               No vents on the Wall match these mood tags right now. Try different tags or clear
               your filters.
             </p>
             {onClearFilters && (
-              <button type="button" onClick={onClearFilters} className="btn-secondary">
+              <button type="button" onClick={onClearFilters} className="btn-glass">
                 Clear filters
               </button>
             )}
           </>
         ) : (
-          <div className="text-red-500 dark:text-red-400">
+          <div className="text-red-400">
             <p className="text-base sm:text-lg font-medium">Something went wrong</p>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{error}</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">{error}</p>
           </div>
         )}
       </div>
@@ -104,12 +100,12 @@ export default function VentsFeed({
 
   if (vents.length === 0) {
     return (
-      <div className="card text-center py-12">
-        <MessageSquare className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+      <div className="glass-panel text-center py-12 px-4">
+        <MessageSquare className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+        <h3 className="text-base sm:text-lg font-medium text-slate-100 mb-2">
           {loading ? 'Loading vents...' : hasTagFilter ? 'No vents yet' : 'No vents found'}
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-slate-400 mb-6">
           {loading
             ? 'Please wait while we fetch the latest vents...'
             : hasTagFilter
@@ -117,7 +113,7 @@ export default function VentsFeed({
               : 'Be the first to share your thoughts and emotions with the community.'}
         </p>
         {!loading && hasTagFilter && onClearFilters && (
-          <button type="button" onClick={onClearFilters} className="btn-secondary">
+          <button type="button" onClick={onClearFilters} className="btn-glass">
             Clear filters
           </button>
         )}
