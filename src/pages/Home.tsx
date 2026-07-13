@@ -19,9 +19,20 @@ import type { SortOption } from '../components/FeedFilters'
 
 type HomeView = 'wall' | 'globe'
 
+/** Tailwind `lg` (1024px): desktop → Vent Globe; smaller screens → Vent Wall. */
+const DESKTOP_MIN_WIDTH_PX = 1024
+
+function getDefaultHomeView(): HomeView {
+  if (typeof window === 'undefined') return 'wall'
+  return window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH_PX}px)`).matches
+    ? 'globe'
+    : 'wall'
+}
+
 export default function Home() {
   const { isAuthenticated } = useAuth()
-  const [view, setView] = useState<HomeView>('wall')
+  // Default only: user can still switch views freely; resize does not override.
+  const [view, setView] = useState<HomeView>(() => getDefaultHomeView())
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)

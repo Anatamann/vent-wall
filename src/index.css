@@ -99,7 +99,7 @@
   }
 }
 
-/* Vent Globe markers — soft blue glow like concept UI */
+/* Vent Globe markers — circular discs, no glow */
 .vent-globe-marker {
   --marker-scale: 1;
   display: flex;
@@ -108,46 +108,39 @@
   width: 2.15rem;
   height: 2.15rem;
   padding: 0;
-  border: 1px solid rgba(186, 230, 253, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 9999px;
   cursor: pointer;
-  background: radial-gradient(circle at 40% 35%, rgba(224, 242, 254, 0.95), rgba(125, 211, 252, 0.2) 55%, rgba(14, 165, 233, 0.08) 100%);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.12),
-    0 0 14px rgba(56, 189, 248, 0.45),
-    0 0 28px rgba(14, 165, 233, 0.2);
+  background: rgba(30, 41, 59, 0.88);
+  box-shadow: none;
   transform: scale(var(--marker-scale));
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   pointer-events: auto;
 }
 
 .vent-globe-marker:hover {
-  transform: scale(calc(var(--marker-scale) * 1.18));
-  border-color: rgba(224, 242, 254, 0.7);
-  box-shadow:
-    0 0 0 1px rgba(125, 211, 252, 0.35),
-    0 0 20px rgba(56, 189, 248, 0.65),
-    0 0 40px rgba(14, 165, 233, 0.3);
+  transform: scale(calc(var(--marker-scale) * 1.15));
+  border-color: rgba(186, 230, 253, 0.55);
+  background: rgba(51, 65, 85, 0.95);
 }
 
 .vent-globe-marker-face {
-  font-size: 1rem;
+  font-size: 1.05rem;
   line-height: 1;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  filter: none;
   user-select: none;
 }
 
 .vent-globe-marker--empty {
-  opacity: 0.72;
-  border-color: rgba(148, 163, 184, 0.35);
-  background: radial-gradient(circle at 40% 35%, rgba(226, 232, 240, 0.55), rgba(100, 116, 139, 0.15) 70%);
-  box-shadow:
-    0 0 0 1px rgba(148, 163, 184, 0.1),
-    0 0 10px rgba(148, 163, 184, 0.2);
+  opacity: 0.8;
+  border-color: rgba(100, 116, 139, 0.4);
+  background: rgba(30, 41, 59, 0.65);
+  box-shadow: none;
 }
 
 .vent-globe-marker--empty .vent-globe-marker-face {
-  filter: grayscale(0.2) opacity(0.9);
+  filter: none;
+  opacity: 0.9;
 }
 
 /* Shared dark shell (Vent Wall + Vent Globe) */
