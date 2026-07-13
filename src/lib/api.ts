@@ -3,6 +3,7 @@ import type {
   AuthUser,
   CommentPayload,
   CreateVentPayload,
+  UpdateVentPayload,
   FeedbackStatus,
   GifDisclaimer,
   GlobeDataResponse,
@@ -234,6 +235,13 @@ export const api = {
     create(payload: CreateVentPayload): Promise<Vent> {
       return request<Vent>('/vents', {
         method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    },
+
+    update(slug: string, payload: UpdateVentPayload): Promise<Vent> {
+      return request<Vent>(`/vents/${slug}`, {
+        method: 'PATCH',
         body: JSON.stringify(payload),
       })
     },

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { ArrowLeft, LayoutDashboard, MessageSquare } from 'lucide-react'
+import { ArrowLeft, LayoutDashboard, MessageSquare, LayoutList, Globe2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import AdminOverviewPanel from '../components/admin/AdminOverview'
 import AdminFeedbackInbox from '../components/admin/AdminFeedbackInbox'
@@ -10,6 +10,11 @@ type AdminTab = 'overview' | 'feedback'
 export default function AdminDashboard() {
   const { user, isAuthenticated, loading } = useAuth()
   const [tab, setTab] = useState<AdminTab>('overview')
+
+  useEffect(() => {
+    document.body.classList.add('admin-view-active')
+    return () => document.body.classList.remove('admin-view-active')
+  }, [])
 
   if (loading) {
     return null
@@ -28,25 +33,44 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 min-w-0">
-          <Link to="/" className="btn-secondary inline-flex items-center gap-2 self-start">
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            Back
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Admin</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/?view=wall"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium
+                border border-white/10 bg-slate-800/70 text-slate-200 backdrop-blur-sm
+                hover:border-sky-400/30 hover:bg-slate-700/80 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vent Wall</span>
+              <span className="sm:hidden">Wall</span>
+            </Link>
+            <Link
+              to="/?view=globe"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium
+                border border-white/10 bg-slate-800/70 text-slate-200 backdrop-blur-sm
+                hover:border-sky-400/30 hover:bg-slate-700/80 transition-colors"
+            >
+              <Globe2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vent Globe</span>
+              <span className="sm:hidden">Globe</span>
+            </Link>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-50">Admin</h1>
         </div>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Signed in as {user.username}</p>
+        <p className="text-xs sm:text-sm text-slate-400">Signed in as {user.username}</p>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-2">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-xs sm:text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
               tab === id
-                ? 'bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 border border-b-0 border-gray-200 dark:border-gray-700 -mb-[1px]'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                ? 'bg-sky-500/15 text-sky-100 border border-sky-400/35'
+                : 'text-slate-400 border border-transparent hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <Icon className="w-4 h-4" />

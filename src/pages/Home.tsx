@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import MoodTagFilter from '../components/MoodTagFilter'
 import TagSearch from '../components/TagSearch'
 import VentsFeed from '../components/VentsFeed'
@@ -29,10 +30,42 @@ function getDefaultHomeView(): HomeView {
     : 'wall'
 }
 
+function parseViewParam(value: string | null): HomeView | null {
+  if (value === 'wall' || value === 'globe') return value
+  return null
+}
+
 export default function Home() {
   const { isAuthenticated } = useAuth()
-  // Default only: user can still switch views freely; resize does not override.
-  const [view, setView] = useState<HomeView>(() => getDefaultHomeView())
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // URL `?view=` wins (post-detail back links); else device default.
+  const [view, setView] = useState<HomeView>(() => {
+    return parseViewParam(searchParams.get('view')) ?? getDefaultHomeView()
+  })
+
+  const handleViewChange = useCallback(
+    (next: HomeView) => {
+      setView(next)
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev)
+          params.set('view', next)
+          return params
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
+
+  // Stay in sync when navigating with /?view=wall|globe
+  useEffect(() => {
+    const fromUrl = parseViewParam(searchParams.get('view'))
+    if (fromUrl && fromUrl !== view) {
+      setView(fromUrl)
+    }
+  }, [searchParams, view])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false)
@@ -106,8 +139,12 @@ export default function Home() {
   if (view === 'globe') {
     return (
       <div className="relative h-full w-full min-h-0 overflow-hidden">
-        <VentGlobeLazy onViewChange={setView} />
-        <FloatingPostButton onClick={handlePostClick} disabled={isAuthenticated && !canPost} />
+        <VentGlobeLazy onViewChange={handleViewChange} />
+        <FloatingPostButton
+          onClick={handlePostClick}
+          disabled={isAuthenticated && !canPost}
+          stacked={isAuthenticated}
+        />
         <PostModal
           isOpen={isPostModalOpen}
           onClose={() => setIsPostModalOpen(false)}
@@ -119,7 +156,7 @@ export default function Home() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <ViewSwitcher view={view} onChange={setView} variant="dark" />
+      <ViewSwitcher view={view} onChange={handleViewChange} variant="dark" />
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <button
@@ -185,7 +222,11 @@ export default function Home() {
         onClose={() => setIsAdvancedSearchOpen(false)}
       />
 
-      <FloatingPostButton onClick={handlePostClick} disabled={isAuthenticated && !canPost} />
+      <FloatingPostButton
+        onClick={handlePostClick}
+        disabled={isAuthenticated && !canPost}
+        stacked={isAuthenticated}
+      />
 
       <PostModal
         isOpen={isPostModalOpen}

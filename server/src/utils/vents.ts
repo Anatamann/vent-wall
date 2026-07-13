@@ -3,6 +3,7 @@ import { buildAvatarUrl } from './avatar-assets.js'
 import { fetchCommentsForVent, mapCommentRow } from './comments.js'
 import { resolveVentId } from './slug.js'
 import { isOnWall } from './wall.js'
+import { MAX_VENT_EDITS } from '../constants.js'
 
 function mapVentUser(row: {
   user_id: string
@@ -44,6 +45,8 @@ const VENT_SELECT_FIELDS = `
   v.created_at,
   v.expires_at,
   v.asset_id,
+  v.contribute_to_globe,
+  COALESCE(v.edit_count, 0)::int AS edit_count,
   u.username,
   u.status,
   u.avatar_path,
@@ -72,7 +75,7 @@ const VENT_SELECT_FIELDS = `
 `
 
 const VENT_GROUP_BY = `
-  v.id, v.slug, v.user_id, v.content, v.created_at, v.expires_at, v.asset_id,
+  v.id, v.slug, v.user_id, v.content, v.created_at, v.expires_at, v.asset_id, v.contribute_to_globe, v.edit_count,
   u.username, u.status, u.avatar_path, u.avatar_updated_at,
   ma.preview_url, ma.width, ma.height
 `
@@ -84,9 +87,21 @@ export interface VentRow {
   content: string
   created_at: string
   expires_at: string
+  contribute_to_globe?: boolean
+  edit_count?: number
   username: string
   mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
   reactions: Array<{ id: string; emoji: string; user_id: string; created_at: string }>
+}
+
+function mapEditMeta(editCount: number | null | undefined) {
+  const count = Math.max(0, Number(editCount) || 0)
+  const remaining = Math.max(0, MAX_VENT_EDITS - count)
+  return {
+    edit_count: count,
+    max_edits: MAX_VENT_EDITS,
+    edits_remaining: remaining,
+  }
 }
 
 export async function fetchVentsWithRelations(options: {
@@ -182,19 +197,26 @@ export async function fetchVentsWithRelations(options: {
     params
   )
 
-  let vents = result.rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    user_id: row.user_id,
-    content: row.content,
-    created_at: row.created_at,
-    expires_at: row.expires_at,
-    is_on_wall: isOnWall(row.expires_at),
-    user: mapVentUser(row),
-    asset: mapVentAsset(row),
-    mood_tags: row.mood_tags ?? [],
-    reactions: row.reactions ?? [],
-  }))
+  let vents = result.rows.map((row) => {
+    const editMeta = mapEditMeta((row as { edit_count?: number }).edit_count)
+    return {
+      id: row.id,
+      slug: row.slug,
+      user_id: row.user_id,
+      content: row.content,
+      created_at: row.created_at,
+      expires_at: row.expires_at,
+      contribute_to_globe: Boolean(
+        (row as { contribute_to_globe?: boolean }).contribute_to_globe ?? true
+      ),
+      ...editMeta,
+      is_on_wall: isOnWall(row.expires_at),
+      user: mapVentUser(row),
+      asset: mapVentAsset(row),
+      mood_tags: row.mood_tags ?? [],
+      reactions: row.reactions ?? [],
+    }
+  })
 
   if (sortBy === 'most_reactions') {
     vents = vents.sort((a, b) => (b.reactions?.length || 0) - (a.reactions?.length || 0))
@@ -228,6 +250,8 @@ export async function fetchVentById(ventId: string) {
     created_at: string
     expires_at: string
     asset_id: string | null
+    contribute_to_globe: boolean
+    edit_count: number
     asset_preview_url: string | null
     asset_width: number | null
     asset_height: number | null
@@ -258,6 +282,7 @@ export async function fetchVentById(ventId: string) {
 
   const onWall = isOnWall(row.expires_at)
   const comments = onWall ? await fetchCommentsForVent(ventId) : []
+  const editMeta = mapEditMeta(row.edit_count)
 
   return {
     id: row.id,
@@ -266,6 +291,8 @@ export async function fetchVentById(ventId: string) {
     content: row.content,
     created_at: row.created_at,
     expires_at: row.expires_at,
+    contribute_to_globe: Boolean(row.contribute_to_globe),
+    ...editMeta,
     is_on_wall: onWall,
     user: mapVentUser(row),
     asset: mapVentAsset(row),

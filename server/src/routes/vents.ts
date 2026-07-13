@@ -24,6 +24,7 @@ import {
   MAX_GIF_COMMENTS_PER_USER_PER_HOUR,
   MAX_POSTS_PER_DAY,
   MAX_REACTIONS_PER_VENT,
+  MAX_VENT_EDITS,
 } from '../constants.js'
 import { resolveLocationFromRequest } from '../utils/geolocation.js'
 
@@ -59,6 +60,28 @@ const createVentSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Add text, a GIF, or both',
+      })
+    }
+  })
+
+/** OP may edit content/tags while the vent is still on the Wall. */
+const updateVentSchema = z
+  .object({
+    content: z.string().max(500).optional().default(''),
+    gif_id: z.string().trim().optional(),
+    remove_gif: z.boolean().optional().default(false),
+    tag_ids: z
+      .array(z.string().refine(isPublicId, { message: 'Invalid tag id' }))
+      .min(1)
+      .max(3),
+    contribute_to_globe: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Final GIF presence is validated against existing vent in the handler.
+    if (data.remove_gif && data.gif_id?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cannot set and remove a GIF in the same request',
       })
     }
   })
@@ -390,6 +413,158 @@ router.post('/', requireAuth, async (req, res) => {
     await pgClient.query('ROLLBACK')
     console.error('Create vent error:', err)
     return res.status(500).json({ error: 'Failed to create vent' })
+  } finally {
+    pgClient.release()
+  }
+})
+
+/**
+ * PATCH /api/vents/:id
+ * Original poster only; only while the vent is still on the Wall.
+ */
+router.patch('/:id', requireAuth, async (req, res) => {
+  const parsed = updateVentSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid input' })
+  }
+
+  const userId = req.user!.userId
+  const { content, tag_ids, gif_id: rawGifId, remove_gif, contribute_to_globe } = parsed.data
+  const trimmedContent = content.trim()
+  const gifId = rawGifId?.trim() || null
+
+  const ventId = await resolveVentIdOr404(req.params.id, res)
+  if (!ventId) return
+
+  const { pool } = await import('../db.js')
+  const pgClient = await pool.connect()
+
+  try {
+    await pgClient.query('BEGIN')
+
+    const existing = await pgClient.query<{
+      id: string
+      user_id: string
+      expires_at: string
+      asset_id: string | null
+      content: string
+      edit_count: number
+    }>(
+      `SELECT id, user_id, expires_at, asset_id, COALESCE(content, '') AS content,
+              COALESCE(edit_count, 0)::int AS edit_count
+       FROM vents WHERE id = $1 FOR UPDATE`,
+      [ventId]
+    )
+
+    const vent = existing.rows[0]
+    if (!vent) {
+      await pgClient.query('ROLLBACK')
+      return res.status(404).json({ error: 'Vent not found' })
+    }
+
+    if (vent.user_id !== userId) {
+      await pgClient.query('ROLLBACK')
+      return res.status(403).json({ error: 'You can only edit your own vents' })
+    }
+
+    if (!isOnWall(vent.expires_at)) {
+      await pgClient.query('ROLLBACK')
+      return res.status(403).json({
+        error: 'This vent can only be edited while it is still on the Wall',
+      })
+    }
+
+    if (vent.edit_count >= MAX_VENT_EDITS) {
+      await pgClient.query('ROLLBACK')
+      return res.status(429).json({
+        error: `This vent has reached the edit limit (${MAX_VENT_EDITS} edits max while on the Wall)`,
+        edit_count: vent.edit_count,
+        max_edits: MAX_VENT_EDITS,
+        edits_remaining: 0,
+      })
+    }
+
+    let nextAssetId: string | null = vent.asset_id
+
+    if (remove_gif) {
+      nextAssetId = null
+    } else if (gifId) {
+      const gifValidation = validateGifComment(gifId)
+      if (!gifValidation.valid) {
+        await pgClient.query('ROLLBACK')
+        return res.status(400).json({ error: gifValidation.error })
+      }
+
+      if (!isKlipyConfigured()) {
+        await pgClient.query('ROLLBACK')
+        return res.status(503).json({
+          error: 'GIF posts are not configured. Add KLIPY_API_KEY to server/.env',
+        })
+      }
+
+      const asset = await ingestKlipyGif({
+        externalId: gifId,
+        expiresAt: new Date(vent.expires_at),
+      })
+      nextAssetId = asset.id
+    }
+
+    if (!trimmedContent && !nextAssetId) {
+      await pgClient.query('ROLLBACK')
+      return res.status(400).json({ error: 'Add text, a GIF, or both' })
+    }
+
+    const tagCheck = await pgClient.query<{ count: number }>(
+      'SELECT COUNT(*)::int AS count FROM mood_tags WHERE id = ANY($1::text[])',
+      [tag_ids]
+    )
+
+    if ((tagCheck.rows[0]?.count ?? 0) !== tag_ids.length) {
+      await pgClient.query('ROLLBACK')
+      return res.status(400).json({ error: 'One or more mood tags are invalid' })
+    }
+
+    if (typeof contribute_to_globe === 'boolean') {
+      await pgClient.query(
+        `UPDATE vents
+         SET content = $1,
+             asset_id = $2,
+             contribute_to_globe = $3,
+             edit_count = edit_count + 1
+         WHERE id = $4`,
+        [trimmedContent, nextAssetId, contribute_to_globe, ventId]
+      )
+    } else {
+      await pgClient.query(
+        `UPDATE vents
+         SET content = $1,
+             asset_id = $2,
+             edit_count = edit_count + 1
+         WHERE id = $3`,
+        [trimmedContent, nextAssetId, ventId]
+      )
+    }
+
+    await pgClient.query('DELETE FROM vent_tags WHERE vent_id = $1', [ventId])
+    for (const tagId of tag_ids) {
+      await pgClient.query('INSERT INTO vent_tags (vent_id, tag_id) VALUES ($1, $2)', [
+        ventId,
+        tagId,
+      ])
+    }
+
+    await pgClient.query('COMMIT')
+
+    const updated = await fetchVentById(ventId)
+    if (!updated) {
+      return res.status(500).json({ error: 'Failed to load updated vent' })
+    }
+
+    return res.json(updated)
+  } catch (err) {
+    await pgClient.query('ROLLBACK')
+    console.error('Update vent error:', err)
+    return res.status(500).json({ error: 'Failed to update vent' })
   } finally {
     pgClient.release()
   }

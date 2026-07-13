@@ -19,6 +19,11 @@ interface UsernameEditorProps {
   onRemoveAvatar: () => Promise<void>
 }
 
+const glassInput =
+  'w-full min-w-0 px-3 py-2 text-xs sm:text-sm rounded-full border border-white/10 ' +
+  'bg-slate-800/80 text-slate-100 placeholder-slate-500 backdrop-blur-sm ' +
+  'focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400/40'
+
 export default function UsernameEditor({
   currentUsername,
   currentStatus,
@@ -152,16 +157,16 @@ export default function UsernameEditor({
 
   return (
     <>
-      <div className="card">
+      <div className="glass-panel p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 min-w-0">
-          <div className="relative flex-shrink-0">
+          <div className="relative flex-shrink-0 self-start">
             <UserAvatar username={currentUsername} avatarUrl={avatarUrl} size="lg" />
 
             <button
               type="button"
               onClick={() => setShowGifPicker(true)}
               disabled={isSettingAvatar}
-              className="absolute inset-0 rounded-full bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center group disabled:cursor-not-allowed"
+              className="absolute inset-0 rounded-full bg-black/0 hover:bg-black/45 transition-colors flex items-center justify-center group disabled:cursor-not-allowed ring-1 ring-white/10"
               title="Choose GIF profile picture"
               aria-label="Choose GIF profile picture"
             >
@@ -174,12 +179,11 @@ export default function UsernameEditor({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              Profile Settings
-            </h1>
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-50 mb-1">Profile Settings</h2>
 
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3">
-              Pick a GIF from Klipy for your profile picture. Cached locally after selection — max 2MB.
+            <p className="text-xs sm:text-sm text-slate-400 mb-3">
+              Pick a GIF from Klipy for your profile picture. Cached locally after selection — max
+              2MB.
             </p>
 
             {isEditing ? (
@@ -190,10 +194,8 @@ export default function UsernameEditor({
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className={`flex-1 min-w-0 w-full px-3 py-1 border rounded-md text-base sm:text-lg font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 transition-colors ${
-                      isValid
-                        ? 'border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500'
-                        : 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
+                    className={`${glassInput} flex-1 font-medium ${
+                      isValid ? '' : 'border-red-400/50 focus:ring-red-400/40'
                     }`}
                     placeholder="Enter username"
                     autoFocus
@@ -203,20 +205,16 @@ export default function UsernameEditor({
                     <button
                       onClick={handleSave}
                       disabled={!isValid || isUpdating}
-                      className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 rounded-full text-emerald-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Save"
                     >
-                      {isUpdating ? (
-                        <LoadingSpinner size="sm" />
-                      ) : (
-                        <Check className="w-5 h-5" />
-                      )}
+                      {isUpdating ? <LoadingSpinner size="sm" /> : <Check className="w-5 h-5" />}
                     </button>
 
                     <button
                       onClick={handleCancel}
                       disabled={isUpdating}
-                      className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      className="p-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-white/5"
                       title="Cancel"
                     >
                       <X className="w-5 h-5" />
@@ -226,25 +224,24 @@ export default function UsernameEditor({
 
                 <div className="text-xs sm:text-sm">
                   {!isValid && newUsername.trim().length > 0 && (
-                    <p className="text-red-600 dark:text-red-400">
-                      Username must be 3-30 characters and contain only letters, numbers, underscores, and hyphens
+                    <p className="text-red-400">
+                      Username must be 3-30 characters and contain only letters, numbers,
+                      underscores, and hyphens
                     </p>
                   )}
-                  {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Press Enter to save, Escape to cancel
-                  </p>
+                  {error && <p className="text-red-400">{error}</p>}
+                  <p className="text-slate-500">Press Enter to save, Escape to cancel</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300">
+                  <span className="text-base sm:text-lg font-medium text-slate-200">
                     @{currentUsername}
                   </span>
                   <button
                     onClick={handleStartEdit}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    className="p-1.5 rounded-full text-slate-400 hover:text-sky-300 hover:bg-white/5 transition-colors"
                     title="Edit username"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -256,31 +253,32 @@ export default function UsernameEditor({
                     type="button"
                     onClick={handleRemoveAvatar}
                     disabled={isSettingAvatar}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Remove profile picture
                   </button>
                 )}
 
-                {error && <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p className="text-xs sm:text-sm text-red-400">{error}</p>}
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
               <label
                 htmlFor="profile-status"
-                className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-xs sm:text-sm font-medium text-slate-200"
               >
                 Status
               </label>
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-[10px] sm:text-xs text-slate-500">
                 Shown under your username on posts and comments:
               </p>
-              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 w-fit">
+              <div className="rounded-xl border border-white/10 bg-slate-800/50 px-3 py-2 w-fit">
                 <UserNameWithStatus
                   username={currentUsername}
                   status={statusTrimmed || 'your status'}
+                  usernameClassName="text-xs sm:text-sm font-medium text-slate-100"
                 />
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 min-w-0">
@@ -294,23 +292,21 @@ export default function UsernameEditor({
                   }}
                   maxLength={MAX_STATUS_LENGTH}
                   placeholder={STATUS_PLACEHOLDER}
-                  className={`input flex-1 min-w-0 w-full ${
-                    statusValid
-                      ? ''
-                      : 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
+                  className={`${glassInput} flex-1 ${
+                    statusValid ? '' : 'border-red-400/50 focus:ring-red-400/40'
                   }`}
                 />
                 <button
                   type="button"
                   onClick={handleSaveStatus}
                   disabled={!statusDirty || !statusValid || isSavingStatus}
-                  className="btn-primary text-xs sm:text-sm py-2 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary rounded-full text-xs sm:text-sm py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingStatus ? 'Saving...' : 'Save'}
                 </button>
               </div>
               <div className="flex items-center justify-between text-[10px] sm:text-xs">
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-slate-500">
                   {statusTrimmed.length}/{MAX_STATUS_LENGTH} · letters, numbers, and spaces only
                 </span>
                 {currentStatus?.trim() && (
@@ -318,19 +314,19 @@ export default function UsernameEditor({
                     type="button"
                     onClick={handleClearStatus}
                     disabled={isSavingStatus}
-                    className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                    className="text-red-400 hover:underline disabled:opacity-50"
                   >
                     Clear status
                   </button>
                 )}
               </div>
               {!statusValid && statusTrimmed.length > 0 && (
-                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">
+                <p className="text-xs sm:text-sm text-red-400">
                   Status can only contain letters, numbers, and spaces
                 </p>
               )}
               {statusError && (
-                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{statusError}</p>
+                <p className="text-xs sm:text-sm text-red-400">{statusError}</p>
               )}
             </div>
           </div>

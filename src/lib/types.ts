@@ -68,6 +68,15 @@ export interface CreateVentPayload {
   contribute_to_globe?: boolean
 }
 
+export interface UpdateVentPayload {
+  content?: string
+  tag_ids: string[]
+  gif_id?: string
+  /** Remove existing GIF attachment. */
+  remove_gif?: boolean
+  contribute_to_globe?: boolean
+}
+
 export interface GlobeRegionPoint {
   regionKey: string
   state: string | null
@@ -135,6 +144,11 @@ export interface Vent {
   expires_at: string
   is_on_wall?: boolean
   comments_open?: boolean
+  contribute_to_globe?: boolean
+  /** Successful OP edits so far (capped while on Wall). */
+  edit_count?: number
+  max_edits?: number
+  edits_remaining?: number
   user?: Pick<User, 'id' | 'username' | 'status' | 'avatar_url'>
   asset?: CommentAsset
   mood_tags?: MoodTag[]

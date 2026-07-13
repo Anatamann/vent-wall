@@ -67,6 +67,25 @@ export function useUserProfile() {
     await fetchUserProfile()
   }
 
+  const updateVent = async (
+    ventId: string,
+    payload: {
+      content?: string
+      tag_ids: string[]
+      gif_id?: string
+      remove_gif?: boolean
+      contribute_to_globe?: boolean
+    }
+  ) => {
+    if (!user) throw new Error('Not authenticated')
+    const vent = userVents.find((v) => v.id === ventId)
+    if (!vent) throw new Error('Vent not found')
+    const updated = await api.vents.update(vent.slug, payload)
+    setUserVents((prev) => prev.map((v) => (v.id === updated.id ? { ...v, ...updated } : v)))
+    await fetchUserProfile()
+    return updated
+  }
+
   const setAvatarFromGif = async (gifId: string) => {
     if (!user) throw new Error('Not authenticated')
     const { user: updated } = await api.users.setAvatar(gifId)
@@ -108,6 +127,7 @@ export function useUserProfile() {
     error,
     updateUsername,
     deleteVent,
+    updateVent,
     setAvatarFromGif,
     removeAvatar,
     updateStatus,

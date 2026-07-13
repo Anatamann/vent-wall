@@ -143,19 +143,25 @@
   opacity: 0.9;
 }
 
-/* Shared dark shell (Vent Wall + Vent Globe) */
+/* Shared dark shell (Vent Wall + Vent Globe + Profile + Admin) */
 body.wall-view-active,
+body.profile-view-active,
+body.admin-view-active,
 body.globe-view-active {
   background-color: #070b14 !important;
   color: #e2e8f0;
 }
 
-body.wall-view-active .globe-shell-root {
+body.wall-view-active .globe-shell-root,
+body.profile-view-active .globe-shell-root,
+body.admin-view-active .globe-shell-root {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, #12203a 0%, #070b14 55%);
   min-height: 100dvh;
 }
 
-body.wall-view-active .globe-shell-header {
+body.wall-view-active .globe-shell-header,
+body.profile-view-active .globe-shell-header,
+body.admin-view-active .globe-shell-header {
   background-color: rgba(15, 23, 42, 0.92) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
   box-shadow: none !important;
@@ -163,22 +169,45 @@ body.wall-view-active .globe-shell-header {
 }
 
 body.wall-view-active .globe-shell-header .text-gray-900,
-body.wall-view-active .globe-shell-header .dark\:text-gray-100 {
+body.wall-view-active .globe-shell-header .dark\:text-gray-100,
+body.profile-view-active .globe-shell-header .text-gray-900,
+body.profile-view-active .globe-shell-header .dark\:text-gray-100,
+body.admin-view-active .globe-shell-header .text-gray-900,
+body.admin-view-active .globe-shell-header .dark\:text-gray-100 {
   color: #f1f5f9 !important;
 }
 
 body.wall-view-active .globe-shell-header .text-gray-700,
-body.wall-view-active .globe-shell-header .dark\:text-gray-300 {
+body.wall-view-active .globe-shell-header .dark\:text-gray-300,
+body.profile-view-active .globe-shell-header .text-gray-700,
+body.profile-view-active .globe-shell-header .dark\:text-gray-300,
+body.admin-view-active .globe-shell-header .text-gray-700,
+body.admin-view-active .globe-shell-header .dark\:text-gray-300 {
   color: #cbd5e1 !important;
 }
 
-body.wall-view-active .globe-shell-footer {
+body.wall-view-active .globe-shell-footer,
+body.profile-view-active .globe-shell-footer,
+body.admin-view-active .globe-shell-footer {
   background-color: rgba(15, 23, 42, 0.9) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-body.wall-view-active .globe-shell-footer p {
+body.wall-view-active .globe-shell-footer p,
+body.profile-view-active .globe-shell-footer p,
+body.admin-view-active .globe-shell-footer p {
   color: #94a3b8 !important;
+}
+
+/* Active nav chips on dark shell */
+body.profile-view-active .globe-shell-header a[href='/profile'] {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  color: #e0f2fe !important;
+}
+
+body.admin-view-active .globe-shell-header a[href='/admin'] {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  color: #e0f2fe !important;
 }
 
 /* Globe view: full viewport width, no page scroll, stage fills below header */

@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, Clock, Globe2, LayoutList, Pencil } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useVentDetail } from '../hooks/useVentDetail'
 import ReactionButton from '../components/ReactionButton'
@@ -9,11 +10,45 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import UserAvatar from '../components/UserAvatar'
 import UserNameWithStatus from '../components/UserNameWithStatus'
 import VentContentDisplay from '../components/VentContentDisplay'
+import EditVentModal from '../components/EditVentModal'
+import MoodTagChip from '../components/MoodTagChip'
+import type { Vent } from '../lib/types'
+import { MAX_VENT_EDITS } from '../lib/constants'
+
+function BackNav() {
+  return (
+    <nav className="flex flex-wrap items-center gap-2 sm:gap-3" aria-label="Back to home views">
+      <Link
+        to="/?view=wall"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium
+          border border-primary-200 dark:border-primary-800
+          bg-primary-50 dark:bg-primary-900/25 text-primary-700 dark:text-primary-300
+          hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <LayoutList className="w-3.5 h-3.5" />
+        Vent Wall
+      </Link>
+      <Link
+        to="/?view=globe"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium
+          border border-primary-200 dark:border-primary-800
+          bg-primary-50 dark:bg-primary-900/25 text-primary-700 dark:text-primary-300
+          hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <Globe2 className="w-3.5 h-3.5" />
+        Vent Globe
+      </Link>
+    </nav>
+  )
+}
 
 export default function PostDetail() {
   const { slug } = useParams<{ slug: string }>()
   const { user, isAuthenticated } = useAuth()
-  const { vent, loading, error, addReaction, addComment } = useVentDetail(slug, user?.id)
+  const { vent, loading, error, addReaction, addComment, reload } = useVentDetail(slug, user?.id)
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
   if (loading) {
     return (
@@ -25,14 +60,8 @@ export default function PostDetail() {
 
   if (error || !vent) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Wall
-        </Link>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <BackNav />
         <div className="card text-center py-12">
           <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
             Post not found
@@ -48,16 +77,49 @@ export default function PostDetail() {
   const timeAgo = formatDistanceToNow(new Date(vent.created_at), { addSuffix: true })
   const expiresIn = formatDistanceToNow(new Date(vent.expires_at), { addSuffix: true })
   const commentsOpen = vent.comments_open ?? vent.is_on_wall ?? false
+  const isOwner = Boolean(user?.id && user.id === vent.user_id)
+  const maxEdits = vent.max_edits ?? MAX_VENT_EDITS
+  const editCount = vent.edit_count ?? 0
+  const editsRemaining =
+    typeof vent.edits_remaining === 'number'
+      ? vent.edits_remaining
+      : Math.max(0, maxEdits - editCount)
+  const canEdit = isOwner && Boolean(vent.is_on_wall) && editsRemaining > 0
+  const editLimitReached = isOwner && Boolean(vent.is_on_wall) && editsRemaining <= 0
+
+  const handleUpdated = (_updated: Vent) => {
+    void reload()
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Wall
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BackNav />
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setIsEditOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium
+              border border-primary-200 dark:border-primary-700
+              bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300
+              hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+            title={`${editsRemaining} of ${maxEdits} edits remaining`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit vent
+            <span className="text-[10px] opacity-80">({editsRemaining} left)</span>
+          </button>
+        )}
+        {editLimitReached && (
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-medium
+              border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+            title={`Maximum of ${maxEdits} edits reached`}
+          >
+            Edit limit reached ({maxEdits}/{maxEdits})
+          </span>
+        )}
+      </div>
 
       <article className="card">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4 min-w-0">
@@ -94,20 +156,9 @@ export default function PostDetail() {
         </div>
 
         {vent.mood_tags && vent.mood_tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5">
+          <div className="flex flex-wrap gap-1.5 mb-5">
             {vent.mood_tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-medium"
-                style={{
-                  backgroundColor: `${tag.color}20`,
-                  color: tag.color,
-                  border: `1px solid ${tag.color}40`,
-                }}
-              >
-                <span className="mr-1">{tag.emoji}</span>
-                {tag.name}
-              </span>
+              <MoodTagChip key={tag.id} tag={tag} static />
             ))}
           </div>
         )}
@@ -137,6 +188,13 @@ export default function PostDetail() {
         ventUserId={vent.user_id}
         onAddComment={addComment}
         disabled={!isAuthenticated}
+      />
+
+      <EditVentModal
+        isOpen={isEditOpen}
+        vent={vent}
+        onClose={() => setIsEditOpen(false)}
+        onUpdated={handleUpdated}
       />
     </div>
   )

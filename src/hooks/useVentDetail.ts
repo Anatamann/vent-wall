@@ -99,6 +99,22 @@ export function useVentDetail(ventSlug: string | undefined, currentUserId?: stri
     [vent]
   )
 
+  const updateVent = useCallback(
+    async (payload: {
+      content?: string
+      tag_ids: string[]
+      gif_id?: string
+      remove_gif?: boolean
+      contribute_to_globe?: boolean
+    }) => {
+      if (!vent) throw new Error('Vent not loaded')
+      const updated = await api.vents.update(vent.slug, payload)
+      setVent(updated)
+      return updated
+    },
+    [vent]
+  )
+
   return {
     vent,
     loading,
@@ -106,5 +122,6 @@ export function useVentDetail(ventSlug: string | undefined, currentUserId?: stri
     reload: loadVent,
     addReaction,
     addComment,
+    updateVent,
   }
 }

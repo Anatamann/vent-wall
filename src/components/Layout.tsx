@@ -16,7 +16,6 @@ export default function Layout({ children }: LayoutProps) {
 
   const showFeedbackFab =
     isAuthenticated && location.pathname !== '/auth' && location.pathname !== '/admin'
-
   const handleFeedbackClick = () => {
     if (!isAuthenticated) {
       window.location.href = '/auth'
@@ -115,10 +114,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {showFeedbackFab && (
         <>
-          <FloatingFeedbackButton
-            onClick={handleFeedbackClick}
-            stacked={location.pathname === '/'}
-          />
+          <FloatingFeedbackButton onClick={handleFeedbackClick} />
           <FeedbackModal
             isOpen={isFeedbackOpen}
             onClose={() => setIsFeedbackOpen(false)}
@@ -130,7 +126,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="globe-shell-footer bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1">
-            <p>&copy; 2024 Vent Wall. A safe space for emotional expression.</p>
+            <p>&copy; 2026 Vent Wall. A safe space for emotional expression.</p>
             <p className="text-[10px] sm:text-xs max-w-2xl mx-auto leading-relaxed">
               ISP region is derived from connection data solely to power the Global Mood Globe
               visualization when users choose to contribute. Approximate region only — never exact
