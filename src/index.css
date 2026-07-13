@@ -131,14 +131,31 @@
   filter: grayscale(0.2) opacity(0.9);
 }
 
-/* When globe view is active, push page chrome toward concept dark shell */
+/* Globe view: full viewport width, no page scroll, stage fills below header */
 body.globe-view-active {
   background-color: #070b14 !important;
   color: #e2e8f0;
+  overflow: hidden !important;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+html:has(body.globe-view-active) {
+  overflow: hidden;
+  height: 100dvh;
+}
+
+body.globe-view-active .globe-shell-root {
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 body.globe-view-active .globe-shell-header {
-  background-color: rgba(15, 23, 42, 0.92) !important;
+  flex-shrink: 0;
+  background-color: rgba(15, 23, 42, 0.95) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
   box-shadow: none !important;
 }
@@ -154,15 +171,33 @@ body.globe-view-active .globe-shell-header .dark\:text-gray-300 {
 }
 
 body.globe-view-active .globe-shell-main {
-  max-width: 72rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: block;
+  position: relative;
+}
+
+/* Single Home child fills remaining viewport under the header */
+body.globe-view-active .globe-shell-main > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 body.globe-view-active .globe-shell-footer {
-  background-color: rgba(15, 23, 42, 0.9) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  color: #94a3b8;
+  display: none !important;
 }
 
-body.globe-view-active .globe-shell-footer p {
-  color: #94a3b8 !important;
+.globe-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }

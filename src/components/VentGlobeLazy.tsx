@@ -3,16 +3,20 @@ import LoadingSpinner from './LoadingSpinner'
 
 const VentGlobe = lazy(() => import('./VentGlobe'))
 
-export default function VentGlobeLazy() {
+interface VentGlobeLazyProps {
+  onViewChange: (view: 'wall' | 'globe') => void
+}
+
+export default function VentGlobeLazy({ onViewChange }: VentGlobeLazyProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center py-24">
+        <div className="globe-stage flex h-full w-full items-center justify-center">
           <LoadingSpinner size="lg" />
         </div>
       }
     >
-      <VentGlobe />
+      <VentGlobe onViewChange={onViewChange} />
     </Suspense>
   )
 }

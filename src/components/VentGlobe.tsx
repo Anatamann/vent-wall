@@ -2,30 +2,30 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import { api } from '../lib/api'
 import { useMoodTags } from '../hooks/useMoodTags'
-import type { GlobeRegionPoint, GlobeVentSummary, MoodTag } from '../lib/types'
+import type { GlobeRegionPoint, GlobeVentSummary } from '../lib/types'
 import LoadingSpinner from './LoadingSpinner'
 import GlobePopup, { type GlobePopupContext } from './GlobePopup'
+import ViewSwitcher from './ViewSwitcher'
+import GlobeMoodFilters from './GlobeMoodFilters'
 
 interface VentGlobeProps {
   hours?: number
+  onViewChange: (view: 'wall' | 'globe') => void
 }
 
 type HtmlPoint = GlobeRegionPoint & {
   size: number
 }
 
-const VISIBLE_MOOD_COUNT = 18
-
-export default function VentGlobe({ hours = 24 }: VentGlobeProps) {
+export default function VentGlobe({ hours = 24, onViewChange }: VentGlobeProps) {
   const globeRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const { tags, loading: tagsLoading } = useMoodTags()
 
   const [regions, setRegions] = useState<GlobeRegionPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dimensions, setDimensions] = useState({ width: 900, height: 560 })
-  const [showAllMoods, setShowAllMoods] = useState(false)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
   const [popupOpen, setPopupOpen] = useState(false)
   const [popupContext, setPopupContext] = useState<GlobePopupContext | null>(null)
@@ -54,39 +54,42 @@ export default function VentGlobe({ hours = 24 }: VentGlobeProps) {
     }
   }, [hours])
 
+  // Fill the entire stage (full viewport width × remaining height under header)
   useEffect(() => {
-    const el = containerRef.current
+    const el = stageRef.current
     if (!el) return
 
     const update = () => {
-      const width = el.clientWidth || 900
-      // Large, centered globe — primary explorative element (concept UI)
-      const height = Math.max(480, Math.min(620, Math.round(width * 0.58)))
+      const width = Math.max(320, el.clientWidth)
+      const height = Math.max(320, el.clientHeight)
       setDimensions({ width, height })
     }
 
     update()
     const observer = new ResizeObserver(update)
     observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+    window.addEventListener('resize', update)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [loading])
 
   useEffect(() => {
-    if (loading) return
+    if (loading || error) return
     const globe = globeRef.current
     if (!globe) return
 
-    // Concept: Africa/Europe-ish focus, gentle auto-rotate
-    globe.pointOfView({ lat: 15, lng: 10, altitude: 2.15 }, 0)
+    globe.pointOfView({ lat: 15, lng: 10, altitude: 2.05 }, 0)
     const controls = globe.controls?.()
     if (controls) {
       controls.autoRotate = true
       controls.autoRotateSpeed = 0.28
       controls.enableDamping = true
-      controls.minDistance = 120
-      controls.maxDistance = 450
+      controls.minDistance = 100
+      controls.maxDistance = 500
     }
-  }, [loading, regions.length])
+  }, [loading, error, regions.length, dimensions.width, dimensions.height])
 
   const points: HtmlPoint[] = useMemo(
     () =>
@@ -96,11 +99,6 @@ export default function VentGlobe({ hours = 24 }: VentGlobeProps) {
       })),
     [regions]
   )
-
-  const visibleTags: MoodTag[] = useMemo(() => {
-    if (showAllMoods) return tags
-    return tags.slice(0, VISIBLE_MOOD_COUNT)
-  }, [tags, showAllMoods])
 
   const openRegionPopup = useCallback(
     async (region: GlobeRegionPoint) => {
@@ -184,7 +182,7 @@ export default function VentGlobe({ hours = 24 }: VentGlobeProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-28">
+      <div className="globe-stage flex h-full w-full items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -192,141 +190,102 @@ export default function VentGlobe({ hours = 24 }: VentGlobeProps) {
 
   if (error) {
     return (
-      <div className="text-center py-16 px-4">
-        <p className="text-red-400 text-sm">{error}</p>
+      <div className="globe-stage flex h-full w-full flex-col items-center justify-center gap-4 px-4">
+        <p className="text-center text-sm text-red-400">{error}</p>
+        <ViewSwitcher view="globe" onChange={onViewChange} variant="dark" />
       </div>
     )
   }
 
   return (
-    <div className="relative -mx-1 sm:mx-0">
-      {/* Immersive stage — matches concept dark canvas */}
+    <div
+      ref={stageRef}
+      className={`globe-stage relative h-full w-full overflow-hidden ${popupOpen ? 'opacity-90' : ''}`}
+      style={{
+        background:
+          'radial-gradient(ellipse 70% 60% at 50% 42%, #1a2744 0%, #0b1224 55%, #070b14 100%)',
+      }}
+    >
       <div
-        ref={containerRef}
-        className={`relative w-full overflow-hidden rounded-2xl sm:rounded-3xl ${
-          popupOpen ? 'opacity-80' : ''
-        }`}
+        className="pointer-events-none absolute inset-0 z-[1]"
         style={{
           background:
-            'radial-gradient(ellipse 70% 60% at 50% 45%, #1a2744 0%, #0b1224 55%, #070b14 100%)',
-          boxShadow: 'inset 0 0 80px rgba(15, 23, 42, 0.6)',
+            'radial-gradient(circle at 50% 45%, transparent 30%, rgba(7,11,20,0.5) 80%)',
         }}
-      >
-        {/* Soft vignette */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[1]"
-          style={{
-            background:
-              'radial-gradient(circle at 50% 48%, transparent 28%, rgba(7,11,20,0.55) 78%)',
+      />
+
+      <div className="absolute inset-0 z-[2] flex items-center justify-center">
+        <Globe
+          ref={globeRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          atmosphereColor="#7dd3fc"
+          atmosphereAltitude={0.22}
+          showAtmosphere
+          htmlElementsData={points}
+          htmlLat="lat"
+          htmlLng="lng"
+          htmlAltitude={(d: object) => {
+            const p = d as HtmlPoint
+            return p.isEmpty ? 0.012 : 0.022 + Math.min(0.05, p.totalVents * 0.003)
+          }}
+          htmlElement={(d: object) => {
+            const p = d as HtmlPoint
+            const el = document.createElement('button')
+            el.type = 'button'
+            el.className = 'vent-globe-marker'
+            el.setAttribute('aria-label', p.state || p.country || 'Region')
+
+            const face = document.createElement('span')
+            face.className = 'vent-globe-marker-face'
+            face.textContent = p.dominatingEmoticon
+            el.appendChild(face)
+
+            el.title = p.isEmpty
+              ? `${p.state || p.country || 'Region'} · quiet`
+              : `${p.state || p.country || 'Region'}: ${p.dominatingTagName || 'mood'} (${p.totalVents})`
+
+            const scale = p.isEmpty ? 0.85 : 0.95 + p.size * 0.15
+            el.style.setProperty('--marker-scale', String(scale))
+            if (p.isEmpty) {
+              el.classList.add('vent-globe-marker--empty')
+            }
+
+            el.onclick = (e) => {
+              e.stopPropagation()
+              void openRegionPopup(p)
+            }
+            return el
           }}
         />
-
-        <div className="relative z-[2] flex justify-center">
-          <Globe
-            ref={globeRef}
-            width={dimensions.width}
-            height={dimensions.height}
-            backgroundColor="rgba(0,0,0,0)"
-            // Muted blue-gray globe (closer to concept than photo-marble)
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-            bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-            atmosphereColor="#7dd3fc"
-            atmosphereAltitude={0.22}
-            showAtmosphere
-            htmlElementsData={points}
-            htmlLat="lat"
-            htmlLng="lng"
-            htmlAltitude={(d: object) => {
-              const p = d as HtmlPoint
-              return p.isEmpty ? 0.012 : 0.022 + Math.min(0.05, p.totalVents * 0.003)
-            }}
-            htmlElement={(d: object) => {
-              const p = d as HtmlPoint
-              const el = document.createElement('button')
-              el.type = 'button'
-              el.className = 'vent-globe-marker'
-              el.setAttribute('aria-label', p.state || p.country || 'Region')
-
-              const face = document.createElement('span')
-              face.className = 'vent-globe-marker-face'
-              face.textContent = p.dominatingEmoticon
-              el.appendChild(face)
-
-              el.title = p.isEmpty
-                ? `${p.state || p.country || 'Region'} · quiet`
-                : `${p.state || p.country || 'Region'}: ${p.dominatingTagName || 'mood'} (${p.totalVents})`
-
-              const scale = p.isEmpty ? 0.85 : 0.95 + p.size * 0.15
-              el.style.setProperty('--marker-scale', String(scale))
-              if (p.isEmpty) {
-                el.classList.add('vent-globe-marker--empty')
-              }
-
-              el.onclick = (e) => {
-                e.stopPropagation()
-                void openRegionPopup(p)
-              }
-              return el
-            }}
-          />
-        </div>
-
-        <p className="relative z-[2] pb-5 -mt-2 text-center text-[11px] sm:text-xs tracking-wide text-slate-400/90">
-          Drag to rotate · Scroll to zoom
-        </p>
       </div>
 
-      {/* Bottom mood capsules — concept-style dark pills + colored dots */}
-      <div className="mt-5 sm:mt-6 px-1">
-        {tagsLoading ? (
-          <div className="flex flex-wrap justify-center gap-2">
-            {[...Array(10)].map((_, i) => (
-              <div
-                key={i}
-                className="h-8 rounded-full bg-slate-800/80 animate-pulse"
-                style={{ width: `${72 + (i % 4) * 16}px` }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-wrap justify-center gap-2 max-w-5xl mx-auto">
-            {visibleTags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => void openMoodPopup(tag.id)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-medium
-                  bg-slate-800/70 hover:bg-slate-700/90 border border-white/10 text-slate-200
-                  transition-all hover:scale-[1.03] hover:border-sky-400/30 hover:shadow-[0_0_12px_rgba(56,189,248,0.15)]
-                  shrink-0"
-              >
-                <span
-                  className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_currentColor]"
-                  style={{ backgroundColor: tag.color, color: tag.color }}
-                  aria-hidden
-                />
-                <span className="opacity-90">{tag.emoji}</span>
-                <span>{tag.name}</span>
-              </button>
-            ))}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-3 pt-3 sm:pt-4">
+        <div className="pointer-events-auto">
+          <ViewSwitcher view="globe" onChange={onViewChange} variant="dark" />
+        </div>
+      </div>
 
-            {tags.length > VISIBLE_MOOD_COUNT && (
-              <button
-                type="button"
-                onClick={() => setShowAllMoods((v) => !v)}
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-medium
-                  bg-slate-900/80 border border-dashed border-white/20 text-slate-300
-                  hover:border-sky-400/40 hover:text-white transition-colors shrink-0"
-              >
-                {showAllMoods ? 'Show less' : `+ more`}
-              </button>
-            )}
-          </div>
-        )}
-
-        <p className="mt-3 text-center text-[10px] sm:text-[11px] text-slate-500">
-          Last {hours}h · approximate ISP region · click a mood or a marker
+      {/* Bottom: multi-row tags (full width) + “+N more” — no horizontal scroll */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#070b14] via-[#070b14]/92 to-transparent pt-14 pb-3 sm:pb-4">
+        <p className="mb-2 text-center text-[11px] sm:text-xs tracking-wide text-slate-400/90">
+          Drag to rotate · Scroll to zoom
         </p>
+
+        <div className="pointer-events-auto w-full px-2 sm:px-4 lg:px-6">
+          <GlobeMoodFilters
+            tags={tags}
+            loading={tagsLoading}
+            onSelect={(tagId) => void openMoodPopup(tagId)}
+          />
+
+          <p className="mt-1.5 px-2 text-center text-[9px] sm:text-[10px] leading-snug text-slate-500">
+            Last {hours}h · ISP region approximate · contribute only if you opt in · never exact position
+          </p>
+        </div>
       </div>
 
       <GlobePopup
