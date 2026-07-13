@@ -25,6 +25,7 @@ import {
   MAX_POSTS_PER_DAY,
   MAX_REACTIONS_PER_VENT,
 } from '../constants.js'
+import { resolveLocationFromRequest } from '../utils/geolocation.js'
 
 const router = Router()
 
@@ -48,6 +49,8 @@ const createVentSchema = z
       .array(z.string().refine(isPublicId, { message: 'Invalid tag id' }))
       .min(1)
       .max(3),
+    /** Opt-in for Vent Globe visibility. Default true. Raw IP is never stored. */
+    contribute_to_globe: z.boolean().optional().default(true),
   })
   .superRefine((data, ctx) => {
     const hasText = data.content.trim().length > 0
@@ -247,10 +250,15 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid input' })
   }
 
-  const { content, tag_ids, gif_id: rawGifId } = parsed.data
+  const { content, tag_ids, gif_id: rawGifId, contribute_to_globe } = parsed.data
   const trimmedContent = content.trim()
   const gifId = rawGifId?.trim() || null
   const userId = req.user!.userId
+  const contributeToGlobe = contribute_to_globe !== false
+
+  // Geocode outside the transaction; never block/fail post creation on lookup errors.
+  // Raw IP is not stored — only rounded approximate location fields.
+  const location = await resolveLocationFromRequest(req)
 
   const { pool } = await import('../db.js')
   const pgClient = await pool.connect()
@@ -323,10 +331,29 @@ router.post('/', requireAuth, async (req, res) => {
 
     const ventId = await createPublicId('v', 'vents', pgClient)
     const ventResult = await pgClient.query(
-      `INSERT INTO vents (id, user_id, content, slug, expires_at, asset_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, slug, user_id, content, created_at, expires_at, asset_id`,
-      [ventId, userId, trimmedContent, slug, expiresAt.toISOString(), assetId]
+      `INSERT INTO vents (
+         id, user_id, content, slug, expires_at, asset_id,
+         contribute_to_globe,
+         location_country_code, location_country, location_state, location_city,
+         location_lat, location_lng
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING id, slug, user_id, content, created_at, expires_at, asset_id, contribute_to_globe`,
+      [
+        ventId,
+        userId,
+        trimmedContent,
+        slug,
+        expiresAt.toISOString(),
+        assetId,
+        contributeToGlobe,
+        location.countryCode,
+        location.country,
+        location.state,
+        location.city,
+        location.lat,
+        location.lng,
+      ]
     )
     const vent = ventResult.rows[0]
 

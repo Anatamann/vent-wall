@@ -17,3 +17,6 @@ export const KLIPY_SEARCH_MAX_QUERY_LENGTH = 100
 
 export const MAX_AVATAR_GIF_BYTES = 2 * 1024 * 1024
 export const MAX_AVATAR_CHANGES_PER_HOUR = isDev ? 50 : 10
+
+/** Vent Globe: min vents in a region before dominating emotion is marked reliable. */
+export const MIN_VENTS_FOR_DOMINATING = 5

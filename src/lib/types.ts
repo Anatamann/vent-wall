@@ -64,6 +64,60 @@ export interface CreateVentPayload {
   content?: string
   tag_ids: string[]
   gif_id?: string
+  /** Opt-in to appear on the Global Mood Globe. Default true. */
+  contribute_to_globe?: boolean
+}
+
+export interface GlobeRegionPoint {
+  regionKey: string
+  state: string | null
+  country: string | null
+  countryCode: string | null
+  lat: number
+  lng: number
+  dominatingEmoticon: string
+  dominatingTagName: string | null
+  dominatingTagId: string | null
+  dominatingTagColor: string | null
+  totalVents: number
+  totalEngagement: number
+  isReliable: boolean
+  isEmpty: boolean
+}
+
+export interface GlobeDataResponse {
+  hours: number
+  minVentsForReliable: number
+  regions: GlobeRegionPoint[]
+  activeCount: number
+  emptyCount: number
+}
+
+export interface GlobeVentSummary {
+  id: string
+  slug: string
+  content: string
+  created_at: string
+  mood_tags: Array<{ id: string; name: string; color: string; emoji: string }>
+  engagement_count: number
+  reaction_count: number
+  comment_count: number
+}
+
+export interface GlobeRegionVentsResponse {
+  hours: number
+  regionKey: string
+  header: string
+  vents: GlobeVentSummary[]
+}
+
+export interface GlobeMoodVentsResponse {
+  hours: number
+  tagId: string
+  tagName: string | null
+  tagEmoji: string | null
+  tagColor: string | null
+  vents: GlobeVentSummary[]
 }
 
 export interface Vent {

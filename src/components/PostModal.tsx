@@ -25,6 +25,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredTags, setFilteredTags] = useState<MoodTag[]>([])
+  const [contributeToGlobe, setContributeToGlobe] = useState(true)
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -45,6 +46,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
       setSelectedTags([])
       setError('')
       setSearchQuery('')
+      setContributeToGlobe(true)
     }
   }, [isOpen])
 
@@ -91,6 +93,7 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
       await api.vents.create({
         content: trimmedContent,
         tag_ids: selectedTags,
+        contribute_to_globe: contributeToGlobe,
         ...(selectedGif ? { gif_id: selectedGif.id } : {}),
       })
       onPostCreated()
@@ -279,6 +282,26 @@ export default function PostModal({ isOpen, onClose, onPostCreated }: PostModalP
             <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-2">
               {selectedTags.length}/3 tags selected
             </p>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={contributeToGlobe}
+                onChange={(e) => setContributeToGlobe(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="min-w-0">
+                <span className="block text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">
+                  Add to 3D-Globe view
+                </span>
+                <span className="block mt-0.5 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Allow this vent to appear on the Global Mood Globe. Approximate location from your
+                  connection may be used — never your exact position.
+                </span>
+              </span>
+            </label>
           </div>
 
           {error && (

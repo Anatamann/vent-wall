@@ -13,6 +13,7 @@ import analyticsRoutes from './routes/analytics.js'
 import feedbackRoutes from './routes/feedback.js'
 import adminRoutes from './routes/admin.js'
 import mediaRoutes from './routes/media.js'
+import globeRoutes from './routes/globe.js'
 import { startMediaCleanupJob } from './jobs/media-cleanup.js'
 import { ensureMediaDirs } from './utils/media-assets.js'
 import { ensureAvatarDir } from './utils/avatar-assets.js'
@@ -128,6 +129,7 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/media', mediaRoutes)
+app.use('/api/globe', globeRoutes)
 
 async function bootstrap() {
   await ensureMediaDirs()

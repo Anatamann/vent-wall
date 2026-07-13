@@ -79,3 +79,90 @@
     transform: translateY(-5px);
   }
 }
+
+/* Vent Globe markers — soft blue glow like concept UI */
+.vent-globe-marker {
+  --marker-scale: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border: 1px solid rgba(186, 230, 253, 0.35);
+  border-radius: 9999px;
+  cursor: pointer;
+  background: radial-gradient(circle at 40% 35%, rgba(224, 242, 254, 0.95), rgba(125, 211, 252, 0.2) 55%, rgba(14, 165, 233, 0.08) 100%);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.12),
+    0 0 14px rgba(56, 189, 248, 0.45),
+    0 0 28px rgba(14, 165, 233, 0.2);
+  transform: scale(var(--marker-scale));
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  pointer-events: auto;
+}
+
+.vent-globe-marker:hover {
+  transform: scale(calc(var(--marker-scale) * 1.18));
+  border-color: rgba(224, 242, 254, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.35),
+    0 0 20px rgba(56, 189, 248, 0.65),
+    0 0 40px rgba(14, 165, 233, 0.3);
+}
+
+.vent-globe-marker-face {
+  font-size: 1rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  user-select: none;
+}
+
+.vent-globe-marker--empty {
+  opacity: 0.72;
+  border-color: rgba(148, 163, 184, 0.35);
+  background: radial-gradient(circle at 40% 35%, rgba(226, 232, 240, 0.55), rgba(100, 116, 139, 0.15) 70%);
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.1),
+    0 0 10px rgba(148, 163, 184, 0.2);
+}
+
+.vent-globe-marker--empty .vent-globe-marker-face {
+  filter: grayscale(0.2) opacity(0.9);
+}
+
+/* When globe view is active, push page chrome toward concept dark shell */
+body.globe-view-active {
+  background-color: #070b14 !important;
+  color: #e2e8f0;
+}
+
+body.globe-view-active .globe-shell-header {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+body.globe-view-active .globe-shell-header .text-gray-900,
+body.globe-view-active .globe-shell-header .dark\:text-gray-100 {
+  color: #f1f5f9 !important;
+}
+
+body.globe-view-active .globe-shell-header .text-gray-700,
+body.globe-view-active .globe-shell-header .dark\:text-gray-300 {
+  color: #cbd5e1 !important;
+}
+
+body.globe-view-active .globe-shell-main {
+  max-width: 72rem;
+}
+
+body.globe-view-active .globe-shell-footer {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: #94a3b8;
+}
+
+body.globe-view-active .globe-shell-footer p {
+  color: #94a3b8 !important;
+}

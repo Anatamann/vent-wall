@@ -9,7 +9,8 @@
     "build": "tsc",
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
-    "db:setup": "npm run migrate && npm run seed"
+    "seed:globe": "tsx src/scripts/seed-globe.ts",
+    "db:setup": "npm run migrate && npm run seed && npm run seed:globe"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

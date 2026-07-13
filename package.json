@@ -17,19 +17,22 @@
     "db:down": "docker compose stop postgres",
     "db:migrate": "npm run migrate --prefix server",
     "db:seed": "npm run seed --prefix server",
-    "db:setup": "npm run db:up && npm run db:migrate && npm run db:seed"
+    "db:seed:globe": "npm run seed:globe --prefix server",
+    "db:setup": "npm run db:up && npm run db:migrate && npm run db:seed && npm run db:seed:globe"
   },
   "dependencies": {
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-globe.gl": "^2.38.0",
     "react-router-dom": "^6.20.1",
-
-    "lucide-react": "^0.294.0",
-    "date-fns": "^2.30.0"
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "@types/three": "^0.185.1",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.1.1",

@@ -5,6 +5,9 @@ import type {
   CreateVentPayload,
   FeedbackStatus,
   GifDisclaimer,
+  GlobeDataResponse,
+  GlobeMoodVentsResponse,
+  GlobeRegionVentsResponse,
   KlipyGifItem,
   MoodTag,
   User,
@@ -350,6 +353,27 @@ export const api = {
       totalReactionsToday: number
     }> {
       return request('/analytics/trending', {}, false)
+    },
+  },
+
+  globe: {
+    data(hours = 24): Promise<GlobeDataResponse> {
+      const search = new URLSearchParams({ hours: String(hours) })
+      return request(`/globe/data?${search.toString()}`, {}, false)
+    },
+
+    regionVents(regionKey: string, hours = 24): Promise<GlobeRegionVentsResponse> {
+      const search = new URLSearchParams({ hours: String(hours) })
+      return request(
+        `/globe/regions/${encodeURIComponent(regionKey)}/vents?${search.toString()}`,
+        {},
+        false
+      )
+    },
+
+    moodVents(tagId: string, hours = 24): Promise<GlobeMoodVentsResponse> {
+      const search = new URLSearchParams({ hours: String(hours) })
+      return request(`/globe/moods/${encodeURIComponent(tagId)}/vents?${search.toString()}`, {}, false)
     },
   },
 
