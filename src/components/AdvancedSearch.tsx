@@ -1,30 +1,31 @@
-import React, { useState, useEffect } from 'react'
-import { Search, Filter, Calendar, User, Hash, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Filter, User, Hash, X } from 'lucide-react'
 import { useMoodTags } from '../hooks/useMoodTags'
 import type { MoodTag } from '../lib/types'
+import MoodTagChip from './MoodTagChip'
 
-interface SearchFilters {
+export interface AdvancedSearchFilters {
   query: string
+  username: string
   tags: string[]
-  dateRange: 'all' | 'today' | 'week' | 'month'
   sortBy: 'relevance' | 'newest' | 'oldest' | 'most_reactions'
   minReactions: number
 }
 
 interface AdvancedSearchProps {
-  onSearch: (filters: SearchFilters) => void
+  onSearch: (filters: AdvancedSearchFilters) => void
   isOpen: boolean
   onClose: () => void
 }
 
 export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSearchProps) {
   const { tags } = useMoodTags()
-  const [filters, setFilters] = useState<SearchFilters>({
+  const [filters, setFilters] = useState<AdvancedSearchFilters>({
     query: '',
+    username: '',
     tags: [],
-    dateRange: 'all',
-    sortBy: 'relevance',
-    minReactions: 0
+    sortBy: 'newest',
+    minReactions: 0,
   })
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,7 +35,7 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
     if (searchQuery.trim() === '') {
       setFilteredTags(tags.slice(0, 20))
     } else {
-      const filtered = tags.filter(tag =>
+      const filtered = tags.filter((tag) =>
         tag.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
       setFilteredTags(filtered.slice(0, 20))
@@ -42,11 +43,11 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
   }, [searchQuery, tags])
 
   const handleTagToggle = (tagId: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       tags: prev.tags.includes(tagId)
-        ? prev.tags.filter(id => id !== tagId)
-        : [...prev.tags, tagId]
+        ? prev.tags.filter((id) => id !== tagId)
+        : [...prev.tags, tagId],
     }))
   }
 
@@ -58,165 +59,175 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
   const handleReset = () => {
     setFilters({
       query: '',
+      username: '',
       tags: [],
-      dateRange: 'all',
-      sortBy: 'relevance',
-      minReactions: 0
+      sortBy: 'newest',
+      minReactions: 0,
     })
     setSearchQuery('')
   }
 
-  const selectedTagObjects = tags.filter(tag => filters.tags.includes(tag.id))
+  const selectedTagObjects = tags.filter((tag) => filters.tags.includes(tag.id))
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-            <Search className="w-5 h-5 mr-2" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
+        aria-label="Close advanced search"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/15 bg-slate-900/85 backdrop-blur-2xl shadow-2xl">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-50 flex items-center">
+            <Search className="w-5 h-5 mr-2 text-sky-400" />
             Advanced Search
           </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <X className="w-5 h-5 text-slate-300" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Text Search */}
+        <div className="p-4 sm:p-6 space-y-6">
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
               Search Text
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 value={filters.query}
-                onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
+                onChange={(e) => setFilters((prev) => ({ ...prev, query: e.target.value }))}
                 placeholder="Search in vent content..."
-                className="text-xs sm:text-sm w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="text-xs sm:text-sm w-full pl-10 pr-4 py-2 rounded-full border border-white/10
+                  bg-slate-800/80 text-slate-100 placeholder-slate-500
+                  focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400/40"
               />
             </div>
           </div>
 
-          {/* Selected Tags */}
-          {filters.tags.length > 0 && (
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Selected Mood Tags
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
+              <User className="w-4 h-4 inline mr-1" />
+              Username
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                value={filters.username}
+                onChange={(e) => setFilters((prev) => ({ ...prev, username: e.target.value }))}
+                placeholder="Search by username..."
+                className="text-xs sm:text-sm w-full pl-10 pr-4 py-2 rounded-full border border-white/10
+                  bg-slate-800/80 text-slate-100 placeholder-slate-500
+                  focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400/40"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-slate-300">
+                Mood Tags
               </label>
-              <div className="flex flex-wrap gap-2">
+              {filters.tags.length > 0 && (
+                <span className="text-[10px] sm:text-xs text-slate-500">
+                  {filters.tags.length} selected · click again to remove
+                </span>
+              )}
+            </div>
+
+            {filters.tags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
                 {selectedTagObjects.map((tag) => (
-                  <button
-                    key={tag.id}
+                  <MoodTagChip
+                    key={`sel-${tag.id}`}
+                    tag={tag}
+                    selected
+                    size="md"
                     onClick={() => handleTagToggle(tag.id)}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border-2 transition-all duration-200"
-                    style={{
-                      backgroundColor: `${tag.color}20`,
-                      color: tag.color,
-                      borderColor: `${tag.color}60`
-                    }}
-                  >
-                    <span className="mr-1.5">{tag.emoji}</span>
-                    {tag.name}
-                    <X className="w-3 h-3 ml-1.5" />
-                  </button>
+                  />
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Tag Search */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Add Mood Tags
-            </label>
             <div className="space-y-3">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search mood tags..."
-                className="text-xs sm:text-sm w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="text-xs sm:text-sm w-full px-3 py-2 rounded-full border border-white/10
+                  bg-slate-800/80 text-slate-100 placeholder-slate-500
+                  focus:outline-none focus:ring-2 focus:ring-sky-400/40"
               />
-              
-              <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-2">
-                <div className="flex flex-wrap gap-2">
+
+              <div className="max-h-40 overflow-y-auto overflow-x-hidden border border-white/10 rounded-xl p-3 bg-slate-800/40">
+                <div className="flex flex-wrap gap-1.5">
                   {filteredTags.map((tag) => {
                     const isSelected = filters.tags.includes(tag.id)
-                    
                     return (
-                      <button
+                      <MoodTagChip
                         key={tag.id}
+                        tag={tag}
+                        selected={isSelected}
+                        size="md"
                         onClick={() => handleTagToggle(tag.id)}
-                        disabled={isSelected}
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
-                          isSelected
-                            ? 'opacity-50 cursor-not-allowed'
-                            : 'hover:scale-105'
-                        }`}
-                        style={{
-                          backgroundColor: `${tag.color}15`,
-                          color: tag.color
-                        }}
-                      >
-                        <span className="mr-1">{tag.emoji}</span>
-                        {tag.name}
-                      </button>
+                      />
                     )
                   })}
+                  {filteredTags.length === 0 && (
+                    <p className="text-xs text-slate-500 py-2 w-full text-center">
+                      No tags match your search
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Date Range */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                Date Range
-              </label>
-              <select
-                value={filters.dateRange}
-                onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value as any }))}
-                className="text-xs sm:text-sm w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
-            </div>
-
-            {/* Sort By */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                 <Filter className="w-4 h-4 inline mr-1" />
                 Sort By
               </label>
               <select
                 value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
-                className="text-xs sm:text-sm w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    sortBy: e.target.value as AdvancedSearchFilters['sortBy'],
+                  }))
+                }
+                className="text-xs sm:text-sm w-full px-3 py-2 rounded-full border border-white/10
+                  bg-slate-800/80 text-slate-100
+                  focus:outline-none focus:ring-2 focus:ring-sky-400/40"
               >
-                <option value="relevance">Relevance</option>
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="most_reactions">Most Reactions</option>
+                <option value="newest" className="bg-slate-900">
+                  Newest First
+                </option>
+                <option value="oldest" className="bg-slate-900">
+                  Oldest First
+                </option>
+                <option value="most_reactions" className="bg-slate-900">
+                  Most Reactions
+                </option>
+                <option value="relevance" className="bg-slate-900">
+                  Relevance
+                </option>
               </select>
             </div>
 
-            {/* Min Reactions */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
                 <Hash className="w-4 h-4 inline mr-1" />
                 Min Reactions
               </label>
@@ -224,33 +235,30 @@ export default function AdvancedSearch({ onSearch, isOpen, onClose }: AdvancedSe
                 type="number"
                 min="0"
                 value={filters.minReactions}
-                onChange={(e) => setFilters(prev => ({ ...prev, minReactions: parseInt(e.target.value) || 0 }))}
-                className="text-xs sm:text-sm w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    minReactions: parseInt(e.target.value, 10) || 0,
+                  }))
+                }
+                className="text-xs sm:text-sm w-full px-3 py-2 rounded-full border border-white/10
+                  bg-slate-800/80 text-slate-100
+                  focus:outline-none focus:ring-2 focus:ring-sky-400/40"
                 placeholder="0"
               />
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleReset}
-              className="btn-secondary"
-            >
+          <div className="flex justify-between pt-4 border-t border-white/10">
+            <button type="button" onClick={handleReset} className="btn-glass">
               Reset Filters
             </button>
-            
+
             <div className="flex space-x-3">
-              <button
-                onClick={onClose}
-                className="btn-secondary"
-              >
+              <button type="button" onClick={onClose} className="btn-glass">
                 Cancel
               </button>
-              <button
-                onClick={handleSearch}
-                className="btn-primary"
-              >
+              <button type="button" onClick={handleSearch} className="btn-primary rounded-full">
                 Search Vents
               </button>
             </div>

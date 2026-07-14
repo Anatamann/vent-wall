@@ -94,12 +94,21 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid tag filter' })
     }
 
+    const rawUsername = typeof req.query.username === 'string' ? req.query.username : ''
+    const rawQuery = typeof req.query.q === 'string' ? req.query.q : ''
+    const minReactions = Math.max(0, Number(req.query.min_reactions || 0) || 0)
+    const sortRaw = String(req.query.sort || 'newest')
+    const sortBy = sortRaw === 'relevance' ? 'newest' : sortRaw
+
     const vents = await fetchVentsWithRelations({
       tagIds,
-      sortBy: String(req.query.sort || 'newest'),
+      sortBy,
       timeFilter: String(req.query.time || 'all'),
       offset: Math.max(0, Number(req.query.offset || 0)),
       limit: Math.min(Math.max(1, Number(req.query.limit || 20)), 50),
+      username: rawUsername.trim() || undefined,
+      query: rawQuery.trim() || undefined,
+      minReactions,
     })
 
     return res.json(vents)

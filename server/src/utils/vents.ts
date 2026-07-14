@@ -112,6 +112,11 @@ export async function fetchVentsWithRelations(options: {
   offset?: number
   limit?: number
   includeExpired?: boolean
+  /** Partial match on username (case-insensitive). */
+  username?: string
+  /** Partial match on vent content (case-insensitive). */
+  query?: string
+  minReactions?: number
 }): Promise<VentRow[]> {
   const {
     userId,
@@ -121,6 +126,9 @@ export async function fetchVentsWithRelations(options: {
     offset = 0,
     limit = 20,
     includeExpired = false,
+    username,
+    query: contentQuery,
+    minReactions = 0,
   } = options
 
   const conditions: string[] = []
@@ -151,6 +159,31 @@ export async function fetchVentsWithRelations(options: {
       )
     `)
     params.push(tagIds)
+  }
+
+  const usernameTrim = username?.trim()
+  if (usernameTrim) {
+    const safe = usernameTrim.replace(/[%_\\]/g, '').slice(0, 30)
+    if (safe) {
+      conditions.push(`u.username ILIKE $${paramIndex++}`)
+      params.push(`%${safe}%`)
+    }
+  }
+
+  const contentTrim = contentQuery?.trim()
+  if (contentTrim) {
+    const safe = contentTrim.replace(/[%_\\]/g, '').slice(0, 200)
+    if (safe) {
+      conditions.push(`v.content ILIKE $${paramIndex++}`)
+      params.push(`%${safe}%`)
+    }
+  }
+
+  if (minReactions > 0) {
+    conditions.push(`
+      (SELECT COUNT(*)::int FROM reactions r_min WHERE r_min.vent_id = v.id) >= $${paramIndex++}
+    `)
+    params.push(minReactions)
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''

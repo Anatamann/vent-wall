@@ -220,6 +220,9 @@ export const api = {
       time?: string
       offset?: number
       limit?: number
+      username?: string
+      q?: string
+      min_reactions?: number
     } = {}): Promise<Vent[]> {
       const search = new URLSearchParams()
       if (params.tags?.length) search.set('tags', params.tags.join(','))
@@ -227,6 +230,11 @@ export const api = {
       if (params.time) search.set('time', params.time)
       if (params.offset !== undefined) search.set('offset', String(params.offset))
       if (params.limit !== undefined) search.set('limit', String(params.limit))
+      if (params.username?.trim()) search.set('username', params.username.trim())
+      if (params.q?.trim()) search.set('q', params.q.trim())
+      if (params.min_reactions !== undefined && params.min_reactions > 0) {
+        search.set('min_reactions', String(params.min_reactions))
+      }
 
       const query = search.toString()
       return request<Vent[]>(`/vents${query ? `?${query}` : ''}`, {}, false)

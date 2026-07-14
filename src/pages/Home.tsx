@@ -5,7 +5,7 @@ import TagSearch from '../components/TagSearch'
 import VentsFeed from '../components/VentsFeed'
 import FeedFilters from '../components/FeedFilters'
 import TrendingDashboard from '../components/TrendingDashboard'
-import AdvancedSearch from '../components/AdvancedSearch'
+import AdvancedSearch, { type AdvancedSearchFilters } from '../components/AdvancedSearch'
 import FloatingPostButton from '../components/FloatingPostButton'
 import PostModal from '../components/PostModal'
 import PostLimitBanner from '../components/PostLimitBanner'
@@ -72,6 +72,9 @@ export default function Home() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false)
   const [showTrending, setShowTrending] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('newest')
+  const [searchUsername, setSearchUsername] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [minReactions, setMinReactions] = useState(0)
 
   const { tags, loading: tagsLoading } = useMoodTags()
   const {
@@ -86,6 +89,9 @@ export default function Home() {
     selectedTags,
     sortBy,
     timeFilter: 'all',
+    username: searchUsername,
+    query: searchQuery,
+    minReactions,
   })
   const { canPost, refresh: refreshPostLimits } = usePostLimits()
 
@@ -132,9 +138,30 @@ export default function Home() {
     }
   }, [view])
 
-  const handleAdvancedSearch = (filters: unknown) => {
-    console.log('Advanced search filters:', filters)
+  const handleAdvancedSearch = (filters: AdvancedSearchFilters) => {
+    setSearchQuery(filters.query.trim())
+    setSearchUsername(filters.username.trim())
+    setMinReactions(Math.max(0, filters.minReactions || 0))
+    if (filters.tags.length > 0) {
+      setSelectedTags(filters.tags)
+    }
+    const sortMap: Record<AdvancedSearchFilters['sortBy'], SortOption> = {
+      newest: 'newest',
+      oldest: 'oldest',
+      most_reactions: 'most_reactions',
+      relevance: 'newest',
+    }
+    setSortBy(sortMap[filters.sortBy] || 'newest')
   }
+
+  const clearAdvancedSearch = () => {
+    setSearchQuery('')
+    setSearchUsername('')
+    setMinReactions(0)
+  }
+
+  const hasAdvancedFilters =
+    Boolean(searchUsername) || Boolean(searchQuery) || minReactions > 0
 
   if (view === 'globe') {
     return (
@@ -161,13 +188,27 @@ export default function Home() {
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <button
           onClick={() => setIsAdvancedSearchOpen(true)}
-          className="flex items-center space-x-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium
-            border border-white/10 bg-slate-800/70 text-slate-200 backdrop-blur-sm
-            hover:border-sky-400/30 hover:bg-slate-700/80 transition-colors"
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium
+            border backdrop-blur-sm transition-colors ${
+              hasAdvancedFilters
+                ? 'border-sky-400/40 bg-sky-500/15 text-sky-100'
+                : 'border-white/10 bg-slate-800/70 text-slate-200 hover:border-sky-400/30 hover:bg-slate-700/80'
+            }`}
         >
           <Search className="w-4 h-4" />
           <span>Advanced Search</span>
         </button>
+
+        {hasAdvancedFilters && (
+          <button
+            type="button"
+            onClick={clearAdvancedSearch}
+            className="px-3 py-2 rounded-full text-[11px] sm:text-xs font-medium text-slate-400
+              border border-white/10 hover:text-slate-200 hover:border-sky-400/25 transition-colors"
+          >
+            Clear search
+          </button>
+        )}
 
         <button
           onClick={() => setShowTrending(!showTrending)}
@@ -182,6 +223,15 @@ export default function Home() {
           <span>Trending</span>
         </button>
       </div>
+
+      {hasAdvancedFilters && (
+        <p className="text-[11px] sm:text-xs text-slate-400">
+          Active search
+          {searchUsername ? ` · @${searchUsername}` : ''}
+          {searchQuery ? ` · “${searchQuery}”` : ''}
+          {minReactions > 0 ? ` · ≥${minReactions} reactions` : ''}
+        </p>
+      )}
 
       {showTrending && <TrendingDashboard />}
       {isAuthenticated && <PostLimitBanner />}

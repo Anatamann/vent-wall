@@ -59,11 +59,7 @@ export default function MoodTagChip({
   )
 
   if (isStatic) {
-    return (
-      <span className={`${base} ${tone} ${interactive} ${className}`} style={!selected ? undefined : undefined}>
-        {content}
-      </span>
-    )
+    return <span className={`${base} ${tone} ${interactive} ${className}`}>{content}</span>
   }
 
   return (
