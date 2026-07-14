@@ -28,7 +28,7 @@
 
 [Unit]
 Description=Vent Wall web application (Docker Compose)
-Documentation=file:///opt/vent-wall/README.md
+Documentation=file:///home/rocky/vent-wall/README.md
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
