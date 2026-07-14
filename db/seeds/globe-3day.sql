@@ -108,15 +108,15 @@ DECLARE
   d RECORD;
   loc RECORD;
   v int;
-  vent_id text;
-  slug text;
-  user_id text;
+  v_id text;
+  v_slug text;
+  v_user text;
   hours_ago numeric;
-  created_at timestamptz;
-  expires_at timestamptz := now() + interval '24 hours';
+  v_created timestamptz;
+  v_expires timestamptz := now() + interval '24 hours';
   primary_tag text;
   secondary_tag text;
-  content text;
+  v_content text;
   place text;
   users text[] := ARRAY['u01','u02','u03','u04','u05','u06','u07','u08','u09'];
   slug_i int := 1000;
@@ -131,26 +131,26 @@ BEGIN
   FOR d IN SELECT * FROM _g3_days ORDER BY day LOOP
     FOR loc IN SELECT * FROM _g3_locs ORDER BY idx LOOP
       FOR v IN 0..(d.vents_per_region - 1) LOOP
-        vent_id := 'g3d' || d.day || 'r' || loc.idx || 'v' || v;
+        v_id := 'g3d' || d.day || 'r' || loc.idx || 'v' || v;
         -- deterministic 8-char slug
         n := slug_i;
-        slug := 'g3';
+        v_slug := 'g3';
         FOR i IN 0..5 LOOP
           ch := substr(alphabet, (n % length(alphabet)) + 1, 1);
-          slug := slug || ch;
+          v_slug := v_slug || ch;
           n := (n / length(alphabet))::int + i * 7 + 3;
         END LOOP;
         slug_i := slug_i + 1;
 
-        user_id := users[1 + ((loc.idx + v + d.day) % array_length(users, 1))];
+        v_user := users[1 + ((loc.idx + v + d.day) % array_length(users, 1))];
         hours_ago := d.base_hours + v * 2.5 + (loc.idx % 3) * 0.4;
-        created_at := now() - (hours_ago || ' hours')::interval;
+        v_created := now() - (hours_ago || ' hours')::interval;
 
         primary_tag := d.primary_tags[1 + (v % array_length(d.primary_tags, 1))];
         secondary_tag := d.secondary_tags[1 + ((v + loc.idx) % array_length(d.secondary_tags, 1))];
 
         place := COALESCE(loc.city, loc.state, loc.country);
-        content := left(
+        v_content := left(
           '[' || d.label || '] ' || place || ': ' ||
           d.snippets[1 + ((v + loc.idx) % array_length(d.snippets, 1))],
           500
@@ -162,7 +162,7 @@ BEGIN
           location_country_code, location_country, location_state, location_city,
           location_lat, location_lng
         ) VALUES (
-          vent_id, user_id, content, slug, created_at, expires_at,
+          v_id, v_user, v_content, v_slug, v_created, v_expires,
           true,
           loc.country_code, loc.country, loc.state, loc.city,
           loc.lat, loc.lng
@@ -180,21 +180,21 @@ BEGIN
           location_lat = EXCLUDED.location_lat,
           location_lng = EXCLUDED.location_lng;
 
-        DELETE FROM vent_tags WHERE vent_tags.vent_id = vent_id;
+        DELETE FROM vent_tags vt WHERE vt.vent_id = v_id;
 
-        SELECT id INTO tag_id_primary FROM mood_tags WHERE name = primary_tag;
+        SELECT mt.id INTO tag_id_primary FROM mood_tags mt WHERE mt.name = primary_tag;
         IF tag_id_primary IS NULL THEN
           RAISE EXCEPTION 'Missing mood tag: %', primary_tag;
         END IF;
-        INSERT INTO vent_tags (vent_id, tag_id) VALUES (vent_id, tag_id_primary)
+        INSERT INTO vent_tags (vent_id, tag_id) VALUES (v_id, tag_id_primary)
         ON CONFLICT DO NOTHING;
 
         IF secondary_tag IS DISTINCT FROM primary_tag THEN
-          SELECT id INTO tag_id_secondary FROM mood_tags WHERE name = secondary_tag;
+          SELECT mt.id INTO tag_id_secondary FROM mood_tags mt WHERE mt.name = secondary_tag;
           IF tag_id_secondary IS NULL THEN
             RAISE EXCEPTION 'Missing mood tag: %', secondary_tag;
           END IF;
-          INSERT INTO vent_tags (vent_id, tag_id) VALUES (vent_id, tag_id_secondary)
+          INSERT INTO vent_tags (vent_id, tag_id) VALUES (v_id, tag_id_secondary)
           ON CONFLICT DO NOTHING;
         END IF;
 
