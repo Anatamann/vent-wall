@@ -7,6 +7,7 @@ server/media/avatars/*
 *.sql
 !db/migrations/*.sql
 !db/seeds/*.sql
+deploy/*.service
 # Dependencies and build output
 node_modules/
 dist/
