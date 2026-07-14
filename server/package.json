@@ -10,6 +10,7 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
     "seed:globe": "tsx src/scripts/seed-globe.ts",
+    "seed:globe:3day": "tsx src/scripts/seed-globe-3day.ts",
     "db:setup": "npm run migrate && npm run seed && npm run seed:globe"
   },
   "dependencies": {
