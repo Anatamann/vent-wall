@@ -1,8 +1,11 @@
-# Vent Wall — systemd unit (Docker Compose, Type=oneshot)
+# Vent Wall — systemd unit (Docker Compose + VPS overlay, Type=oneshot)
 #
 # Install:
-#   1. Copy this repo to the host (e.g. /opt/vent-wall) and create .env:
+#   1. Copy this repo to the host (e.g. /opt/vent-wall or /home/rocky/vent-wall)
+#      and create .env:
 #        cp .env.docker.example .env
+#      Set production values (CLIENT_ORIGIN, ALLOW_LOCALHOST_CORS=false,
+#      VENTWALL_SEED_DB=false, strong secrets).
 #   2. Edit WorkingDirectory below to match the install path.
 #   3. Install the unit:
 #        sudo cp deploy/vent-wall.service /etc/systemd/system/
@@ -11,9 +14,14 @@
 #
 # Useful commands:
 #   sudo systemctl status vent-wall.service
-#   sudo systemctl restart vent-wall.service      # start/stop stack
+#   sudo systemctl restart vent-wall.service      # stop then start stack
 #   sudo systemctl reload vent-wall.service       # rebuild + restart containers
 #   journalctl -u vent-wall.service -f
+#
+# Manual UI rebuild (if reload still shows old assets):
+#   cd $WorkingDirectory
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml build --no-cache --parallel 1 web
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --force-recreate web
 #
 # To run the stack as a non-root user, uncomment User= and Group= in [Service]
 # (that user must be in the docker group).
@@ -42,14 +50,15 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # User=ventwall
 # Group=docker
 
-# Bring up postgres, api, and web (containers use restart: unless-stopped).
-ExecStart=docker compose up -d --remove-orphans
+# Same dual-file merge as manual VPS usage:
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml …
+ExecStart=docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build --remove-orphans
 
 # Tear down containers on stop; named volumes (DB, media) are preserved.
-ExecStop=docker compose down
+ExecStop=docker compose -f docker-compose.yml -f docker-compose.vps.yml down
 
-# Rebuild images after pulling code or changing Dockerfiles.
-ExecReload=docker compose up -d --build --remove-orphans
+# Rebuild images after pulling code or changing Dockerfiles (sequential on low-RAM hosts).
+ExecReload=/bin/bash -c 'docker compose -f docker-compose.yml -f docker-compose.vps.yml build --parallel 1 && docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --remove-orphans'
 
 # First start may build images and wait for health checks.
 TimeoutStartSec=600
