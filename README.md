@@ -18,9 +18,22 @@ You need [Docker](https://docs.docker.com/get-docker/) and Docker Compose on the
 
 2. **Start everything**
 
+   **Local / default** (single file):
+
    ```bash
    docker compose up -d --build
+   # or: podman compose up -d --build
    ```
+
+   **VPS / low-memory** (base + explicit second file):
+
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+   # or: podman compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+   ```
+
+   The VPS overlay (`docker-compose.vps.yml`) keeps Postgres off the public host ports,
+   uses a tighter Node build heap, and defaults seeding/CORS for production-ish hosts.
 
 3. **Open the app**
 
@@ -28,7 +41,7 @@ You need [Docker](https://docs.docker.com/get-docker/) and Docker Compose on the
 
    **http://localhost:3000**
 
-   On first start the database is migrated and seeded with demo data. Try logging in as:
+   On first start the database is migrated and seeded with demo data (local default). Try logging in as:
 
    | Username | Password |
    |----------|----------|
@@ -38,15 +51,21 @@ You need [Docker](https://docs.docker.com/get-docker/) and Docker Compose on the
 
    ```bash
    docker compose down
+   # VPS stack:
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml down
    ```
 
 Useful commands:
 
 | Command | What it does |
 |---------|----------------|
-| `npm run docker:up` | Same as `docker compose up -d --build` |
-| `npm run docker:down` | Stops all services |
+| `npm run docker:up` | Local stack: `docker compose up -d --build` |
+| `npm run docker:down` | Stops local stack |
 | `npm run docker:logs` | Follow container logs |
+| `npm run docker:vps:up` | VPS overlay: base + `docker-compose.vps.yml` |
+| `npm run docker:vps:down` | Stops VPS overlay stack |
+| `npm run docker:vps:build` | Sequential image build (low RAM) |
+| `npm run docker:vps:config` | Print merged compose config |
 
 ---
 
@@ -186,13 +205,63 @@ GIF features require a valid `KLIPY_API_KEY` on the server. GIF media is cached 
 
 - Set `VENTWALL_SEED_DB=true`, restart the API, or run seed manually against your database.
 
+**Web Docker build: JavaScript heap out of memory**
+
+The Vent Globe stack (`react-globe.gl` + `three`) makes `vite build` RAM-heavy. On a small VPS:
+
+1. Use the **VPS compose overlay** and sequential builds:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml build --parallel 1
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d
+   # or: npm run docker:vps:build && npm run docker:vps:up
+   ```
+2. Add temporary swap if the host has little free RAM (example 2G):
+   ```bash
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   ```
+3. Tune Node heap for the web image (MB) in `.env`:
+   ```bash
+   NODE_MAX_OLD_SPACE_SIZE=512   # vps default; try 768/1024 if you have headroom
+   ```
+4. Rebuild only web after frontend changes:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml build --parallel 1 web
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d web
+   ```
+
+Docker web build uses `npm run build:docker` (`vite build` only) to avoid a second TypeScript peak.
+
+**Podman/Docker: blank page in browser**
+
+Usually not “compose failed” — the stack can be up while the UI looks empty:
+
+1. Open **`http://localhost:3000`** (or your `VENTWALL_WEB_PORT`), not only the API port `4000`.
+2. Hard refresh (Ctrl+Shift+R) after rebuild so old asset hashes are not cached.
+3. Rebuild web after the low-memory vite fix (globe code must not load on first paint):
+   ```bash
+   podman compose build --parallel 1 web
+   podman compose up -d
+   ```
+4. If the desktop opens **Vent Globe** first and WebGL is blocked, try `http://localhost:3000/?view=wall`.
+5. Confirm assets exist:
+   ```bash
+   curl -sI http://localhost:3000/ | head -1
+   curl -s http://localhost:3000/api/health
+   ```
+6. DevTools → Console/Network: look for failed `/assets/*.js` or CORS errors.  
+   `CLIENT_ORIGIN` should match the browser URL (e.g. `http://localhost:3000`).
+
 ---
 
 ## Project layout (for operators)
 
 | Path | Role |
 |------|------|
-| `docker-compose.yml` | Full stack: Postgres, API, web |
+| `docker-compose.yml` | Base stack: Postgres, API, web (local default) |
+| `docker-compose.vps.yml` | Explicit VPS overlay (merge with `-f … -f …`) |
 | `.env.docker.example` | Template for `.env` |
 | `docker/` | API and web Dockerfiles, nginx config, entrypoint |
 | `db/migrations/` | Database schema updates (applied automatically in Docker) |

@@ -67,6 +67,8 @@ services:
       dockerfile: docker/Dockerfile.web
       args:
         VITE_API_URL: /api
+        # Tune for low-memory VPS (MB). If OOM persists, add swap or lower concurrent builds.
+        NODE_MAX_OLD_SPACE_SIZE: ${NODE_MAX_OLD_SPACE_SIZE:-768}
     restart: unless-stopped
     depends_on:
       api:

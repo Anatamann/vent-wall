@@ -1,0 +1,36 @@
+# Explicit VPS overlay for low-memory / production-ish hosts.
+#
+# Merged on top of docker-compose.yml — does not replace the base file.
+#
+# Podman:
+#   podman compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+#
+# Docker:
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+#
+# Prefer sequential builds on small boxes:
+#   podman compose -f docker-compose.yml -f docker-compose.vps.yml build --parallel 1
+#   podman compose -f docker-compose.yml -f docker-compose.vps.yml up -d
+#
+# Inspect the merged config:
+#   podman compose -f docker-compose.yml -f docker-compose.vps.yml config
+
+services:
+  postgres:
+    # Keep Postgres on the compose network only (not published on the host).
+    # Safer on a public VPS; use a tunnel if you need DB tools.
+    ports: []
+
+  api:
+    environment:
+      # Public deployments should set CLIENT_ORIGIN to the real site URL in .env
+      ALLOW_LOCALHOST_CORS: ${ALLOW_LOCALHOST_CORS:-false}
+      # Avoid re-seeding demo data on every restart unless you opt in via .env
+      VENTWALL_SEED_DB: ${VENTWALL_SEED_DB:-false}
+
+  web:
+    build:
+      args:
+        VITE_API_URL: /api
+        # Tighter default heap for small VPS builds (override in .env if needed)
+        NODE_MAX_OLD_SPACE_SIZE: ${NODE_MAX_OLD_SPACE_SIZE:-512}
