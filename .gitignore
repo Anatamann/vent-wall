@@ -6,7 +6,7 @@ server/media/avatars/*
 !server/media/.gitkeep
 *.sql
 !db/migrations/*.sql
-
+!db/seeds/*.sql
 # Dependencies and build output
 node_modules/
 dist/
