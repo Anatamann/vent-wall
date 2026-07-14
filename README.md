@@ -32,8 +32,25 @@ You need [Docker](https://docs.docker.com/get-docker/) and Docker Compose on the
    # or: podman compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
    ```
 
-   The VPS overlay (`docker-compose.vps.yml`) keeps Postgres off the public host ports,
-   uses a tighter Node build heap, and defaults seeding/CORS for production-ish hosts.
+   The VPS overlay (`docker-compose.vps.yml`) uses a tighter Node build heap (512) and
+   prefers production-ish defaults when those keys are **unset** in `.env`.
+   Postgres is published only on `127.0.0.1` in the base compose (not on public interfaces).
+
+   On the VPS, set in `.env` (otherwise values already in `.env` win over overlay defaults):
+
+   ```env
+   CLIENT_ORIGIN=http://YOUR_SERVER_IP:3000   # or https://your-domain
+   ALLOW_LOCALHOST_CORS=false
+   VENTWALL_SEED_DB=false                     # true only for the first seed
+   NODE_MAX_OLD_SPACE_SIZE=512
+   ```
+
+   Confirm Postgres is loopback-only after merge:
+
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.vps.yml config | grep -A25 'postgres:'
+   # published host should be 127.0.0.1 (not 0.0.0.0)
+   ```
 
 3. **Open the app**
 

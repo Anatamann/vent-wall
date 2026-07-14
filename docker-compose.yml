@@ -6,8 +6,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ventwall}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ventwall}
       POSTGRES_DB: ${POSTGRES_DB:-ventwall}
+    # Bind to loopback only so Postgres is not exposed on public interfaces (VPS-safe).
+    # Host tools still use localhost:5432. Containers reach it via the `postgres` service name.
     ports:
-      - "${VENTWALL_POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${VENTWALL_POSTGRES_PORT:-5432}:5432"
     volumes:
       - ventwall_pgdata:/var/lib/postgresql/data
     healthcheck:
