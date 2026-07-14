@@ -146,7 +146,7 @@ export default function VentGlobe({ hours = 24, onViewChange }: VentGlobeProps) 
       const tag = tags.find((t) => t.id === tagId)
       setPopupContext({
         title: tag ? `${tag.emoji} ${tag.name}` : 'Mood',
-        subtitle: 'Vents with this mood from all regions (last 24 hours)',
+        subtitle: 'All on-Wall vents with this mood (last 24 hours), including those without a map location',
         emoticon: tag?.emoji,
         accentColor: tag?.color,
       })
@@ -159,7 +159,7 @@ export default function VentGlobe({ hours = 24, onViewChange }: VentGlobeProps) 
         const data = await api.globe.moodVents(tagId, hours)
         setPopupContext({
           title: data.tagName ? `${data.tagEmoji || ''} ${data.tagName}`.trim() : 'Mood',
-          subtitle: `${data.vents.length} vent${data.vents.length === 1 ? '' : 's'} worldwide · last 24 hours`,
+          subtitle: `${data.vents.length} vent${data.vents.length === 1 ? '' : 's'} on the Wall · last ${hours}h · map location not required`,
           emoticon: data.tagEmoji,
           accentColor: data.tagColor,
         })

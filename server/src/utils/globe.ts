@@ -346,16 +346,16 @@ export async function fetchGlobeVentsForMood(
     return { tagId, tagName: null, tagEmoji: null, tagColor: null, vents: [] }
   }
 
+  // Mood filter is Wall-wide: include all on-Wall vents with this tag, even if they
+  // lack location / contribute_to_globe (so seed data and opted-out vents still appear).
   const result = await query<GlobeVentRow>(
     `SELECT
        ${GLOBE_VENT_SELECT}
      FROM vents v
      INNER JOIN users u ON u.id = v.user_id
      INNER JOIN vent_tags vt ON vt.vent_id = v.id AND vt.tag_id = $2
-     WHERE v.contribute_to_globe = true
+     WHERE v.expires_at >= now()
        AND v.created_at > now() - make_interval(hours => $1)
-       AND v.location_lat IS NOT NULL
-       AND v.location_lng IS NOT NULL
      ORDER BY v.created_at DESC
      LIMIT $3`,
     [hours, tagId, limit]

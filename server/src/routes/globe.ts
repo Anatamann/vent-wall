@@ -54,7 +54,7 @@ router.get('/regions/:regionKey/vents', async (req, res) => {
 
 /**
  * GET /api/globe/moods/:tagId/vents?hours=24
- * Global vents matching a mood tag (last N hours, contribute_to_globe only).
+ * On-Wall vents with this mood tag (last N hours). Location / globe opt-in not required.
  */
 router.get('/moods/:tagId/vents', async (req, res) => {
   try {
