@@ -269,13 +269,14 @@ export default function VentGlobe({ hours = 24, onViewChange }: VentGlobeProps) 
         </div>
       </div>
 
-      {/* Bottom: multi-row tags (full width) + “+N more” — no horizontal scroll */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#070b14] via-[#070b14]/92 to-transparent pt-14 pb-3 sm:pb-4">
-        <p className="mb-2 text-center text-[11px] sm:text-xs tracking-wide text-slate-400/90">
-          Drag to rotate · Scroll to zoom
+      {/* Bottom: mood tags — mobile swipes; sm+ multi-row + “+N more” */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#070b14] via-[#070b14]/92 to-transparent pt-14 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4">
+        <p className="mb-2 text-center text-[11px] sm:text-xs tracking-wide text-slate-400/90 px-2">
+          <span className="sm:hidden">Drag to rotate · Pinch zoom</span>
+          <span className="hidden sm:inline">Drag to rotate · Scroll to zoom</span>
         </p>
 
-        <div className="pointer-events-auto w-full px-2 sm:px-4 lg:px-6">
+        <div className="pointer-events-auto w-full min-w-0 px-2 sm:px-4 lg:px-6">
           <GlobeMoodFilters
             tags={tags}
             loading={tagsLoading}

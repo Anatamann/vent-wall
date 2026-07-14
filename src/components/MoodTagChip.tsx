@@ -12,6 +12,11 @@ interface MoodTagChipProps {
   measure?: boolean
   className?: string
   size?: 'sm' | 'md'
+  /**
+   * Compact mobile-friendly chip: slightly tighter padding.
+   * Name truncates so long tags (e.g. "Erotic Fantasy") never blow the layout.
+   */
+  compact?: boolean
 }
 
 /**
@@ -26,14 +31,20 @@ export default function MoodTagChip({
   measure = false,
   className = '',
   size = 'sm',
+  compact = false,
 }: MoodTagChipProps) {
   const sizeClass =
     size === 'md'
-      ? 'px-3 py-1.5 text-xs sm:text-sm gap-2'
-      : 'px-2.5 py-1 text-[10px] sm:text-[11px] gap-1.5'
+      ? compact
+        ? 'px-2.5 py-1.5 text-xs gap-1.5'
+        : 'px-3 py-1.5 text-xs sm:text-sm gap-2'
+      : compact
+        ? 'px-2 py-1 text-[10px] gap-1'
+        : 'px-2.5 py-1 text-[10px] sm:text-[11px] gap-1.5'
 
+  // shrink-0 keeps chips readable in scroll rows; max-w + truncate handles long names in cards.
   const base =
-    `inline-flex shrink-0 items-center rounded-full font-medium backdrop-blur-sm ` +
+    `inline-flex max-w-full shrink-0 items-center rounded-full font-medium backdrop-blur-sm ` +
     `border transition-all ${sizeClass}`
 
   const tone = selected
@@ -51,15 +62,24 @@ export default function MoodTagChip({
         style={{ backgroundColor: tag.color, color: tag.color }}
         aria-hidden
       />
-      <span className="opacity-90" aria-hidden>
+      <span className="shrink-0 opacity-90" aria-hidden>
         {tag.emoji}
       </span>
-      <span className="whitespace-nowrap">{tag.name}</span>
+      <span
+        className={`min-w-0 truncate ${compact ? 'max-w-[5.75rem]' : 'max-w-[7.5rem] sm:max-w-[10rem]'}`}
+        title={tag.name}
+      >
+        {tag.name}
+      </span>
     </>
   )
 
   if (isStatic) {
-    return <span className={`${base} ${tone} ${interactive} ${className}`}>{content}</span>
+    return (
+      <span className={`${base} ${tone} ${interactive} ${className}`} title={tag.name}>
+        {content}
+      </span>
+    )
   }
 
   return (
@@ -69,6 +89,7 @@ export default function MoodTagChip({
       tabIndex={measure ? -1 : 0}
       onClick={measure ? undefined : onClick}
       aria-pressed={selected}
+      title={tag.name}
       className={`${base} ${tone} ${interactive} ${className}`}
     >
       {content}
@@ -81,3 +102,9 @@ export const moodTagMoreClassName =
   'bg-slate-900/85 px-2.5 py-1 text-[10px] sm:text-[11px] font-medium text-sky-200/95 ' +
   'backdrop-blur-sm transition-colors hover:border-sky-400/60 hover:text-white hover:bg-slate-800/90 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40'
+
+/** Horizontal scroll row for mobile mood filters (touch-friendly, no horizontal page scroll). */
+export const moodTagScrollRowClassName =
+  'flex w-full gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain ' +
+  'pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] ' +
+  '[&::-webkit-scrollbar]:hidden snap-x snap-mandatory'

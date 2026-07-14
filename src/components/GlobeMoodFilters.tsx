@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { MoodTag } from '../lib/types'
-import MoodTagChip, { moodTagMoreClassName } from './MoodTagChip'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import MoodTagChip, { moodTagMoreClassName, moodTagScrollRowClassName } from './MoodTagChip'
 
 interface GlobeMoodFiltersProps {
   tags: MoodTag[]
@@ -10,17 +11,25 @@ interface GlobeMoodFiltersProps {
 
 const MAX_ROWS = 2
 const GAP_PX = 6
+const NARROW_QUERY = '(max-width: 639px)'
 
 /**
- * Full-width multi-row mood filters for Vent Globe (standard chip design).
- * Fills up to MAX_ROWS, then collapses remainder into “+N more”.
+ * Mood filters for Vent Globe.
+ * Mobile: full horizontal swipe of compact chips (showcases all emotions).
+ * sm+: multi-row wrap with “+N more”.
  */
 export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodFiltersProps) {
+  const isNarrow = useMediaQuery(NARROW_QUERY)
   const measureRef = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [fitCount, setFitCount] = useState(tags.length)
 
   const recomputeFit = useCallback(() => {
+    if (isNarrow) {
+      setFitCount(tags.length)
+      return
+    }
+
     const root = measureRef.current
     if (!root || tags.length === 0) {
       setFitCount(tags.length)
@@ -37,6 +46,10 @@ export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodF
     const rowH = chips[0].offsetHeight || 28
     const maxBottom = firstTop + MAX_ROWS * rowH + (MAX_ROWS - 1) * GAP_PX + 2
     const containerW = root.clientWidth
+    if (containerW < 8) {
+      setFitCount(Math.min(8, tags.length))
+      return
+    }
 
     const moreEl = root.querySelector<HTMLElement>('[data-more-measure]')
     const moreW = moreEl?.offsetWidth ?? 96
@@ -87,12 +100,12 @@ export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodF
     }
 
     setFitCount(Math.min(best, tags.length))
-  }, [tags.length])
+  }, [isNarrow, tags.length])
 
   useLayoutEffect(() => {
     recomputeFit()
     const root = measureRef.current
-    if (!root) return
+    if (!root || isNarrow) return
 
     const ro = new ResizeObserver(() => recomputeFit())
     ro.observe(root)
@@ -101,7 +114,7 @@ export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodF
       ro.disconnect()
       window.clearTimeout(t)
     }
-  }, [recomputeFit, tags])
+  }, [recomputeFit, tags, isNarrow])
 
   useLayoutEffect(() => {
     setExpanded(false)
@@ -124,10 +137,29 @@ export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodF
   if (tags.length === 0) return null
 
   const remaining = Math.max(0, tags.length - fitCount)
-  const shown = expanded ? tags : tags.slice(0, fitCount)
+  const shown = isNarrow || expanded ? tags : tags.slice(0, fitCount)
+
+  if (isNarrow) {
+    return (
+      <div className="w-full min-w-0 px-0.5">
+        <div
+          className={`${moodTagScrollRowClassName} justify-start`}
+          role="list"
+          aria-label="Mood filters"
+        >
+          {shown.map((tag) => (
+            <div key={tag.id} className="snap-start" role="listitem">
+              <MoodTagChip tag={tag} compact onClick={() => onSelect(tag.id)} />
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-center text-[9px] text-slate-500">Swipe moods · tap to explore</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="relative w-full max-w-none">
+    <div className="relative w-full max-w-none min-w-0">
       <div
         ref={measureRef}
         className="pointer-events-none absolute left-0 right-0 top-0 -z-10 flex w-full flex-wrap justify-center gap-1.5 opacity-0"
@@ -142,7 +174,7 @@ export default function GlobeMoodFilters({ tags, loading, onSelect }: GlobeMoodF
       </div>
 
       <div
-        className={`flex w-full flex-wrap justify-center gap-1.5 overflow-x-hidden ${
+        className={`flex w-full min-w-0 flex-wrap justify-center gap-1.5 overflow-x-hidden ${
           expanded ? 'max-h-[28vh] overflow-y-auto overscroll-contain' : 'overflow-y-hidden'
         }`}
       >

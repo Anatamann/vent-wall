@@ -16,7 +16,8 @@ const GAP_PX = 6
 
 /**
  * Wall mood filter — same chip language as Vent Globe.
- * Multi-row wrap, full width, collapse remainder into “+N more”.
+ * Multi-row wrap, full width, collapse remainder into “+N more”
+ * (same behavior on mobile and desktop).
  */
 export default function MoodTagFilter({
   tags,
@@ -50,6 +51,11 @@ export default function MoodTagFilter({
     const rowH = chips[0].offsetHeight || 28
     const maxBottom = firstTop + MAX_ROWS * rowH + (MAX_ROWS - 1) * GAP_PX + 2
     const containerW = root.clientWidth
+    if (containerW < 8) {
+      setFitCount(Math.min(6, tags.length))
+      return
+    }
+
     const moreEl = root.querySelector<HTMLElement>('[data-more-measure]')
     const moreW = moreEl?.offsetWidth ?? 96
 
@@ -59,8 +65,6 @@ export default function MoodTagFilter({
       else break
     }
 
-    // +1 for “All Moods” which is not a data-tag-chip in measure? We measure only mood tags.
-    // Fit count is for mood tags only; All Moods is always shown separately.
     if (within >= tags.length) {
       setFitCount(tags.length)
       return
@@ -138,7 +142,7 @@ export default function MoodTagFilter({
   const shown = expanded ? tags : tags.slice(0, fitCount)
 
   return (
-    <div className="glass-panel mb-6 p-4 sm:p-5">
+    <div className="glass-panel mb-6 p-4 sm:p-5 min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3 min-w-0">
         <h2 className="text-sm sm:text-base font-semibold text-slate-100">Filter by Mood</h2>
         <button
@@ -152,8 +156,7 @@ export default function MoodTagFilter({
         </button>
       </div>
 
-      <div className="relative w-full">
-        {/* Measure layer */}
+      <div className="relative w-full min-w-0">
         <div
           ref={measureRef}
           className="pointer-events-none absolute left-0 right-0 top-0 -z-10 flex w-full flex-wrap gap-1.5 opacity-0"
@@ -168,7 +171,7 @@ export default function MoodTagFilter({
         </div>
 
         <div
-          className={`flex w-full flex-wrap gap-1.5 overflow-x-hidden ${
+          className={`flex w-full min-w-0 flex-wrap gap-1.5 overflow-x-hidden ${
             expanded ? 'max-h-[32vh] overflow-y-auto overscroll-contain' : 'overflow-y-hidden'
           }`}
         >

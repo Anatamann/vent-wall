@@ -152,11 +152,11 @@ export default function VentCard({ vent, animateOnScroll = true }: VentCardProps
         )}
       </div>
 
-      {/* Mood tags — standard chips */}
+      {/* Mood tags — standard chips (min-w-0 + truncate avoids mobile overflow) */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex min-w-0 flex-wrap gap-1.5 mb-3">
           {tags.map((tag) => (
-            <MoodTagChip key={tag.id} tag={tag} static />
+            <MoodTagChip key={tag.id} tag={tag} static compact />
           ))}
         </div>
       )}
