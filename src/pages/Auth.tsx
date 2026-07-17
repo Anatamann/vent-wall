@@ -5,8 +5,11 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { MessageSquare, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
+/** Default after login/signup: World Cup Finals. Explicit ?next= still wins (e.g. post modal). */
+const DEFAULT_AFTER_AUTH = '/worldcup'
+
 function safeNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return '/'
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return DEFAULT_AFTER_AUTH
   return raw
 }
 

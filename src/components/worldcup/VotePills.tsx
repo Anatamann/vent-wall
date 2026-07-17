@@ -78,6 +78,12 @@ export default function VotePills({
         <p className="text-center text-[11px] sm:text-xs text-slate-400">{message}</p>
       ) : votingClosed ? (
         <p className="text-center text-[11px] text-amber-300/90">Voting is closed</p>
+      ) : mySupport ? (
+        <p className="text-center text-[11px] text-slate-500">
+          {mySupport.user?.id
+            ? 'Registered vote is locked to your account and cannot be changed.'
+            : 'Your vote is locked on this device. Sign in to bind it to your account permanently.'}
+        </p>
       ) : null}
     </div>
   )

@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { Router } from 'express'
 import { z } from 'zod'
 import { query } from '../db.js'
@@ -5,6 +6,7 @@ import { optionalAuth, requireAuth } from '../middleware/auth.js'
 import {
   MAX_WC_COMMENTS_PER_POST_NON_OP,
   MAX_WC_COMMENTS_PER_POST_OP,
+  MAX_WC_WALL_POSTS_PER_USER_PER_DAY,
   MAX_WC_WALL_WRITES_PER_USER_PER_HOUR,
   MAX_GIF_COMMENTS_PER_USER_PER_HOUR,
   MIN_SUPPORTS_FOR_RELIABLE_REGION,
@@ -20,7 +22,9 @@ import {
   validateGifComment,
 } from '../utils/comments.js'
 import {
+  alreadyVotedPayload,
   assertIpBallotCaps,
+  bindBallotVoteToUser,
   checkVoteAttemptLimits,
   clientIpHash,
   ensureBallotId,
@@ -28,7 +32,9 @@ import {
   fetchRegionTally,
   fetchSupportByBallot,
   fetchSupportById,
+  fetchSupportByUserId,
   fetchWallSupports,
+  fetchWallSupportsByUserId,
   fetchWorldCupGlobeRegions,
   getGlobalStats,
   isVotingClosed,
@@ -37,6 +43,7 @@ import {
   mapWcCommentRow,
   placementFromLocation,
   readBallotId,
+  setBallotCookie,
 } from '../utils/worldcup.js'
 
 const router = Router()
@@ -87,15 +94,69 @@ router.get('/stats', async (_req, res) => {
 
 router.get('/me', optionalAuth, async (req, res) => {
   try {
-    const ballotId = readBallotId(req)
-    if (!ballotId) {
-      return res.json({ support: null, ballot_id: null, voting_closed: isVotingClosed() })
+    let ballotId = readBallotId(req)
+    const userId = req.user?.userId ?? null
+    let wallPostsToday = 0
+    let wallPosts: ReturnType<typeof mapSupportRow>[] = []
+    if (userId) {
+      const dayCount = await query<{ count: number }>(
+        `SELECT COUNT(*)::int AS count FROM worldcup_supports
+         WHERE user_id = $1
+           AND is_wall_post = true
+           AND wall_published_at IS NOT NULL
+           AND (wall_published_at AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'UTC')::date`,
+        [userId]
+      )
+      wallPostsToday = dayCount.rows[0]?.count ?? 0
+      const posts = await fetchWallSupportsByUserId(userId, { limit: 50 })
+      wallPosts = posts.map(mapSupportRow)
     }
+
+    // Registered users: account vote is canonical and immutable.
+    if (userId) {
+      let userVote = await fetchSupportByUserId(userId)
+      if (!userVote && ballotId) {
+        // First login after anonymous cast → bind this ballot to the account.
+        userVote = await bindBallotVoteToUser(ballotId, userId)
+      }
+      if (userVote) {
+        if (userVote.ballot_id) {
+          setBallotCookie(res, userVote.ballot_id)
+          ballotId = userVote.ballot_id
+        }
+        return res.json({
+          support: mapSupportRow(userVote),
+          wall_posts: wallPosts,
+          ballot_id: ballotId,
+          voting_closed: isVotingClosed(),
+          wall_posts_today: wallPostsToday,
+          max_wall_posts_per_day: MAX_WC_WALL_POSTS_PER_USER_PER_DAY,
+          vote_bound_to_account: true,
+        })
+      }
+    }
+
+    if (!ballotId) {
+      return res.json({
+        support: null,
+        wall_posts: wallPosts,
+        ballot_id: null,
+        voting_closed: isVotingClosed(),
+        wall_posts_today: wallPostsToday,
+        max_wall_posts_per_day: MAX_WC_WALL_POSTS_PER_USER_PER_DAY,
+        vote_bound_to_account: false,
+      })
+    }
+
     const row = await fetchSupportByBallot(ballotId)
     return res.json({
       support: row ? mapSupportRow(row) : null,
+      wall_posts: wallPosts,
       ballot_id: ballotId,
       voting_closed: isVotingClosed(),
+      wall_posts_today: wallPostsToday,
+      max_wall_posts_per_day: MAX_WC_WALL_POSTS_PER_USER_PER_DAY,
+      vote_bound_to_account: Boolean(userId && row?.user_id === userId),
     })
   } catch (err) {
     console.error('WorldCup me error:', err)
@@ -133,8 +194,12 @@ router.get('/supports/:id', async (req, res) => {
   }
 })
 
-/** Anonymous bare vote — cookie + optional X-WC-Ballot-Id, immutable team. */
-router.post('/supports/vote', async (req, res) => {
+/**
+ * Cast support.
+ * - Anonymous: ballot cookie identity (IP-capped).
+ * - Logged in: vote is permanently bound to user_id; cannot change team ever.
+ */
+router.post('/supports/vote', optionalAuth, async (req, res) => {
   const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.errors[0]?.message || 'Invalid input' })
@@ -145,13 +210,77 @@ router.post('/supports/vote', async (req, res) => {
   }
 
   try {
-    const ballotId = ensureBallotId(req, res)
+    const userId = req.user?.userId ?? null
+    let ballotId = ensureBallotId(req, res)
     const ipHash = clientIpHash(req)
+    const requestedTeam = parsed.data.team_id
+
+    // ── Account-bound vote wins over browser ballot ───────────────────────
+    if (userId) {
+      const userVote = await fetchSupportByUserId(userId)
+      if (userVote) {
+        if (userVote.ballot_id) {
+          setBallotCookie(res, userVote.ballot_id)
+          ballotId = userVote.ballot_id
+        }
+        // Optional geo backfill on re-click
+        let row = userVote
+        if (
+          row.contribute_to_globe &&
+          (row.location_lat == null || row.location_lng == null)
+        ) {
+          const location = await resolveLocationFromRequest(req)
+          if (location.lat != null && location.lng != null) {
+            await query(
+              `UPDATE worldcup_supports SET
+                 location_country_code = $1, location_country = $2,
+                 location_state = $3, location_city = $4,
+                 location_lat = $5, location_lng = $6
+               WHERE id = $7`,
+              [
+                location.countryCode,
+                location.country,
+                location.state,
+                location.city,
+                location.lat,
+                location.lng,
+                row.id,
+              ]
+            )
+            row = (await fetchSupportById(row.id)) || row
+          }
+        }
+        return res.status(409).json(
+          alreadyVotedPayload(
+            row,
+            ballotId,
+            row.team_id === requestedTeam
+              ? 'You already support this team. Your registered vote cannot be changed.'
+              : `Your registered vote is locked to ${row.team_id === 'spain' ? 'Spain' : 'Argentina'} and cannot be changed.`
+          )
+        )
+      }
+    }
 
     // Prefer existing ballot over rate limits so re-clicks don't burn quotas.
     let existing = await fetchSupportByBallot(ballotId)
+    if (existing && userId && existing.user_id && existing.user_id !== userId) {
+      // Ballot owned by another account — mint a fresh ballot for this user.
+      ballotId = crypto.randomUUID()
+      setBallotCookie(res, ballotId)
+      existing = null
+    }
+
     if (existing) {
-      // Backfill geo for votes cast before local-IP lookup worked (so markers appear).
+      // Logged-in user with no account vote yet → claim this ballot permanently.
+      if (userId && !existing.user_id) {
+        await query(`UPDATE worldcup_supports SET user_id = $1 WHERE id = $2 AND user_id IS NULL`, [
+          userId,
+          existing.id,
+        ])
+        existing = (await fetchSupportById(existing.id)) || existing
+      }
+
       if (
         existing.contribute_to_globe &&
         (existing.location_lat == null || existing.location_lng == null)
@@ -160,12 +289,9 @@ router.post('/supports/vote', async (req, res) => {
         if (location.lat != null && location.lng != null) {
           await query(
             `UPDATE worldcup_supports SET
-               location_country_code = $1,
-               location_country = $2,
-               location_state = $3,
-               location_city = $4,
-               location_lat = $5,
-               location_lng = $6
+               location_country_code = $1, location_country = $2,
+               location_state = $3, location_city = $4,
+               location_lat = $5, location_lng = $6
              WHERE id = $7`,
             [
               location.countryCode,
@@ -181,19 +307,7 @@ router.post('/supports/vote', async (req, res) => {
         }
       }
 
-      return res.status(409).json({
-        error: 'You already cast your support.',
-        code: 'ALREADY_VOTED',
-        ballot_id: ballotId,
-        support: mapSupportRow(existing),
-        placed: placementFromLocation({
-          countryCode: existing.location_country_code,
-          country: existing.location_country,
-          state: existing.location_state,
-          lat: existing.location_lat,
-          lng: existing.location_lng,
-        }),
-      })
+      return res.status(409).json(alreadyVotedPayload(existing, ballotId))
     }
 
     const attemptErr = checkVoteAttemptLimits(ballotId, ipHash)
@@ -218,18 +332,18 @@ router.post('/supports/vote', async (req, res) => {
           lng: null,
         }
 
-    // Backfill geo on bare votes when lookup succeeded (needed for globe markers).
     const id = await createPublicId('s', 'worldcup_supports')
     await query(
       `INSERT INTO worldcup_supports (
-         id, ballot_id, team_id, contribute_to_globe,
+         id, ballot_id, user_id, team_id, contribute_to_globe,
          location_country_code, location_country, location_state, location_city,
          location_lat, location_lng, ip_hash, is_wall_post
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,false)`,
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,false)`,
       [
         id,
         ballotId,
-        parsed.data.team_id,
+        userId,
+        requestedTeam,
         contribute,
         location.countryCode,
         location.country,
@@ -244,12 +358,28 @@ router.post('/supports/vote', async (req, res) => {
     const row = await fetchSupportById(id)
     const placed = placementFromLocation(location)
     return res.status(201).json({
-      support: row ? mapSupportRow(row) : { id, team_id: parsed.data.team_id },
+      support: row ? mapSupportRow(row) : { id, team_id: requestedTeam },
       ballot_id: ballotId,
       placed,
+      vote_bound_to_account: Boolean(userId),
     })
   } catch (err: unknown) {
     if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+      // Unique index on user_id (account already voted) or ballot_id
+      const userId = req.user?.userId
+      if (userId) {
+        const userVote = await fetchSupportByUserId(userId)
+        if (userVote) {
+          if (userVote.ballot_id) setBallotCookie(res, userVote.ballot_id)
+          return res.status(409).json(
+            alreadyVotedPayload(
+              userVote,
+              userVote.ballot_id,
+              'Your registered vote is locked and cannot be changed.'
+            )
+          )
+        }
+      }
       return res.status(409).json({ error: 'You already cast your support.', code: 'ALREADY_VOTED' })
     }
     console.error('WorldCup vote error:', err)
@@ -274,6 +404,24 @@ router.post('/supports', requireAuth, async (req, res) => {
   const contribute = parsed.data.contribute_to_globe !== false
 
   try {
+    const postsToday = await query<{ count: number }>(
+      `SELECT COUNT(*)::int AS count FROM worldcup_supports
+       WHERE user_id = $1
+         AND is_wall_post = true
+         AND wall_published_at IS NOT NULL
+         AND (wall_published_at AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'UTC')::date`,
+      [userId]
+    )
+    const wallPostsToday = postsToday.rows[0]?.count ?? 0
+    if (wallPostsToday >= MAX_WC_WALL_POSTS_PER_USER_PER_DAY) {
+      return res.status(429).json({
+        error: `You can only publish ${MAX_WC_WALL_POSTS_PER_USER_PER_DAY} World Cup wall posts per day. Try again tomorrow.`,
+        code: 'WC_WALL_DAILY_LIMIT',
+        wall_posts_today: wallPostsToday,
+        max_wall_posts_per_day: MAX_WC_WALL_POSTS_PER_USER_PER_DAY,
+      })
+    }
+
     const hourly = await query<{ count: number }>(
       `SELECT COUNT(*)::int AS count FROM worldcup_supports
        WHERE user_id = $1 AND is_wall_post = true
@@ -284,14 +432,17 @@ router.post('/supports', requireAuth, async (req, res) => {
       return res.status(429).json({ error: 'Wall post limit reached. Try again later.' })
     }
 
-    const ballotId = ensureBallotId(req, res)
-    let existing = await fetchSupportByBallot(ballotId)
+    let ballotId = ensureBallotId(req, res)
+    let accountVote = await fetchSupportByUserId(userId)
+    if (accountVote?.ballot_id) {
+      setBallotCookie(res, accountVote.ballot_id)
+      ballotId = accountVote.ballot_id
+    }
 
-    if (existing?.is_wall_post) {
-      return res.status(409).json({
-        error: 'You already published a support post for this ballot.',
-        support: mapSupportRow(existing),
-      })
+    let ballotVote = await fetchSupportByBallot(ballotId)
+    if (!accountVote && ballotVote && !ballotVote.user_id) {
+      accountVote = await bindBallotVoteToUser(ballotId, userId)
+      ballotVote = accountVote
     }
 
     let assetId: string | null = null
@@ -310,8 +461,9 @@ router.post('/supports', requireAuth, async (req, res) => {
       assetId = asset.id
     }
 
-    if (existing) {
-      // Attach wall content to existing immutable vote
+    // First wall body on the account/ballot vote row (still one vote).
+    const primaryVote = accountVote || ballotVote
+    if (primaryVote && !primaryVote.is_wall_post) {
       await query(
         `UPDATE worldcup_supports SET
            user_id = $1,
@@ -321,26 +473,38 @@ router.post('/supports', requireAuth, async (req, res) => {
            wall_published_at = now(),
            contribute_to_globe = COALESCE($4, contribute_to_globe)
          WHERE id = $5`,
-        [userId, trimmedContent || null, assetId, contribute, existing.id]
+        [userId, trimmedContent || null, assetId, contribute, primaryVote.id]
       )
-      const row = await fetchSupportById(existing.id)
-      return res.status(200).json(row ? mapSupportRow(row) : { id: existing.id })
+      const row = await fetchSupportById(primaryVote.id)
+      return res.status(200).json(row ? mapSupportRow(row) : { id: primaryVote.id })
     }
 
-    // New vote + wall post
-    const ipHash = clientIpHash(req)
-    const attemptErr = checkVoteAttemptLimits(ballotId, ipHash)
-    if (attemptErr) {
-      return res.status(429).json({ error: attemptErr })
-    }
-    const capErr = await assertIpBallotCaps(ipHash)
-    if (capErr) {
-      return res.status(429).json({ error: capErr })
-    }
-
-    const teamId = parsed.data.team_id
-    if (!teamId) {
+    // Additional wall posts (or first post that also creates a vote).
+    const lockedTeam = primaryVote?.team_id
+    const teamId = lockedTeam ?? parsed.data.team_id
+    if (!teamId || !isWorldCupTeamId(teamId)) {
       return res.status(400).json({ error: 'team_id is required when casting a new support' })
+    }
+    if (parsed.data.team_id && parsed.data.team_id !== teamId) {
+      return res.status(409).json({
+        error: 'Your registered vote is locked. Wall posts must match your supported team.',
+        code: 'TEAM_LOCKED',
+        support: primaryVote ? mapSupportRow(primaryVote) : undefined,
+      })
+    }
+
+    const ipHash = clientIpHash(req)
+
+    // Only enforce new-ballot / IP caps when this write also creates the vote row.
+    if (!primaryVote) {
+      const attemptErr = checkVoteAttemptLimits(ballotId, ipHash)
+      if (attemptErr) {
+        return res.status(429).json({ error: attemptErr })
+      }
+      const capErr = await assertIpBallotCaps(ipHash)
+      if (capErr) {
+        return res.status(429).json({ error: capErr })
+      }
     }
 
     const location = contribute
@@ -355,6 +519,10 @@ router.post('/supports', requireAuth, async (req, res) => {
         }
 
     const id = await createPublicId('s', 'worldcup_supports')
+    // Additional posts: ballot_id NULL so they do not create a second vote.
+    // First-ever vote+post: ballot_id set (one vote).
+    const insertBallotId = primaryVote ? null : ballotId
+
     await query(
       `INSERT INTO worldcup_supports (
          id, ballot_id, user_id, team_id, content, asset_id,
@@ -364,7 +532,7 @@ router.post('/supports', requireAuth, async (req, res) => {
        ) VALUES ($1,$2,$3,$4,$5,$6,true,$7,$8,$9,$10,$11,$12,$13,$14,now())`,
       [
         id,
-        ballotId,
+        insertBallotId,
         userId,
         teamId,
         trimmedContent || null,

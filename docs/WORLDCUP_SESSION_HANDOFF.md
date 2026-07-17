@@ -3,9 +3,10 @@
 **Purpose**: Resume work in the **original Vent Wall repo** with full context from the Grok / worldcupGlobe session.  
 **Repo**: `/home/anitya/MyApps/Github/vent-wall` (remote: `Anatamann/vent-wall`)  
 **Branch**: `feature/worldcup-finals-2026` (pushed to `origin`)  
-**Commit**: `3f3ed082` — *feat: add World Cup Finals 2026 Support Wall and Globe*  
+**Commits**: `3f3ed082` feat (Support Wall/Globe) · `8221b9ac` docs (this handoff)  
 **PR**: https://github.com/Anatamann/vent-wall/pull/new/feature/worldcup-finals-2026  
 **Date of handoff**: 2026-07-17  
+**Doc sync**: product instruction journey + phases aligned to this handoff (locked MVP) 
 
 ---
 

@@ -67,7 +67,7 @@ export default function WorldCupPost() {
         className="inline-flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300"
       >
         <ArrowLeft className="w-4 h-4" />
-        Support Wall
+        Wall
       </Link>
 
       {loading ? (

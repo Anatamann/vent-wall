@@ -490,10 +490,15 @@ export const api = {
 
     me(): Promise<{
       support: WorldCupSupport | null
+      wall_posts?: WorldCupSupport[]
       ballot_id: string | null
       voting_closed: boolean
+      wall_posts_today?: number
+      max_wall_posts_per_day?: number
+      vote_bound_to_account?: boolean
     }> {
-      return request('/worldcup/me', {}, false)
+      // auth=true so optionalAuth can count today's wall posts for logged-in users
+      return request('/worldcup/me', {}, true)
     },
 
     listSupports(params: {
@@ -519,6 +524,7 @@ export const api = {
     }): Promise<{
       support: WorldCupSupport
       ballot_id?: string
+      vote_bound_to_account?: boolean
       placed?: {
         regionKey: string | null
         label: string
@@ -528,10 +534,11 @@ export const api = {
         lng: number
       } | null
     }> {
+      // Send JWT when present so the server can bind an immutable account vote.
       return request(
         '/worldcup/supports/vote',
         { method: 'POST', body: JSON.stringify(payload) },
-        false
+        true
       )
     },
 

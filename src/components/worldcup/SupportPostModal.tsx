@@ -80,7 +80,7 @@ export default function SupportPostModal({
       : 'bg-worldcup-argentina-soft text-worldcup-argentina-text border border-[rgba(116,172,223,0.45)] hover:bg-[rgba(116,172,223,0.28)]'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6">
       <button
         type="button"
         className="absolute inset-0 bg-slate-950/50 backdrop-blur-md"

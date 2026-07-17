@@ -5,7 +5,16 @@
 **Status**: Design system for implementation  
 **Date**: July 14, 2026  
 **Product**: Support Wall + Support Globe (Spain vs Argentina)  
-**Sibling docs**: Pair with [`worldcup-finals-2026-support-wall-instructions.md`](./worldcup-finals-2026-support-wall-instructions.md) for flows, auth, anti-spam, API, comments. **This file is visual only** and is the source of truth for colors and component chrome when building the MVP.
+**Sibling docs**
+
+| Doc | Role |
+|-----|------|
+| [`worldcup-finals-2026-support-wall-instructions.md`](./worldcup-finals-2026-support-wall-instructions.md) | Product / API / anti-spam |
+| [`WORLDCUP_SESSION_HANDOFF.md`](./WORLDCUP_SESSION_HANDOFF.md) | Branch, what shipped, run checklist |
+
+**This file is visual only** — source of truth for colors and component chrome.
+
+**MVP product note (do not redesign chrome around vote auth)**: bare **Spain/Argentina vote is anonymous**; login only for wall posts and emoji/GIF reactions. Shell stays Vent glass; team red/blue only on team surfaces.
 
 **Principle**: Look and feel like **Vent Wall / Vent Globe** (dark glass, sky accents, Inter, calm density) while introducing a clear **binary team identity** (Spain red-gold vs Argentina sky-blue-white) that never overwhelms the shared shell.
 

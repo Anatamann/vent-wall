@@ -133,7 +133,7 @@ export default function SupportGlobe({
     return (
       <div className="globe-stage flex h-full w-full flex-col items-center justify-center gap-4 px-4">
         <p className="text-center text-sm text-red-400">{error}</p>
-        <ViewSwitcher view="globe" onChange={onViewChange} variant="dark" wallLabel="Support Wall" globeLabel="Support Globe" />
+        <ViewSwitcher view="globe" onChange={onViewChange} variant="dark" wallLabel="Wall" globeLabel="Globe" />
       </div>
     )
   }
@@ -198,8 +198,8 @@ export default function SupportGlobe({
             view="globe"
             onChange={onViewChange}
             variant="dark"
-            wallLabel="Support Wall"
-            globeLabel="Support Globe"
+            wallLabel="Wall"
+            globeLabel="Globe"
           />
         </div>
         <div className="pointer-events-auto w-full max-w-3xl">

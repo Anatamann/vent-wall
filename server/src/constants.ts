@@ -32,7 +32,10 @@ export const MAX_VOTE_ATTEMPTS_PER_IP_HASH_HOUR = isDev ? 200 : 20
 export const MAX_VOTE_ATTEMPTS_PER_BALLOT_HOUR = isDev ? 50 : 5
 export const MAX_WC_COMMENTS_PER_POST_NON_OP = 3
 export const MAX_WC_COMMENTS_PER_POST_OP = 50
-export const MAX_WC_WALL_WRITES_PER_USER_PER_HOUR = isDev ? 50 : 5
+/** Max World Cup wall posts (text/GIF) per logged-in user per calendar day (UTC date). */
+export const MAX_WC_WALL_POSTS_PER_USER_PER_DAY = 5
+/** Burst limit; should stay ≥ daily cap so the daily limit is the real gate. */
+export const MAX_WC_WALL_WRITES_PER_USER_PER_HOUR = isDev ? 50 : 10
 export const MIN_SUPPORTS_FOR_RELIABLE_REGION = 5
 export const WC_BALLOT_COOKIE = 'wc_ballot_id'
 export const WC_MEDIA_EXPIRES_AT = new Date('2099-12-31T00:00:00.000Z')

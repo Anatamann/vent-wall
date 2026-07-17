@@ -277,6 +277,30 @@ export async function fetchWallSupports(options: {
   return result.rows
 }
 
+/** Wall posts published by a registered user (profile / “my Finals posts”). */
+export async function fetchWallSupportsByUserId(
+  userId: string,
+  options: { limit?: number; offset?: number } = {}
+): Promise<SupportRow[]> {
+  const limit = Math.min(Math.max(1, options.limit ?? 40), 100)
+  const offset = Math.max(0, options.offset ?? 0)
+  const result = await query<SupportRow>(
+    `
+    SELECT ${SUPPORT_SELECT}
+    FROM worldcup_supports s
+    JOIN worldcup_teams t ON t.id = s.team_id
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN media_assets a ON a.id = s.asset_id
+    WHERE s.user_id = $1
+      AND s.is_wall_post = true
+    ORDER BY COALESCE(s.wall_published_at, s.created_at) DESC
+    LIMIT $2 OFFSET $3
+    `,
+    [userId, limit, offset]
+  )
+  return result.rows
+}
+
 export async function fetchSupportById(id: string): Promise<SupportRow | null> {
   const result = await query<SupportRow>(
     `
@@ -309,10 +333,78 @@ export async function fetchSupportByBallot(ballotId: string): Promise<SupportRow
   return result.rows[0] ?? null
 }
 
+/**
+ * Canonical vote for a registered user: ballot-backed row with their user_id.
+ * Earliest row wins if historical duplicates exist before the unique index.
+ */
+export async function fetchSupportByUserId(userId: string): Promise<SupportRow | null> {
+  const result = await query<SupportRow>(
+    `
+    SELECT ${SUPPORT_SELECT}
+    FROM worldcup_supports s
+    JOIN worldcup_teams t ON t.id = s.team_id
+    LEFT JOIN users u ON u.id = s.user_id
+    LEFT JOIN media_assets a ON a.id = s.asset_id
+    WHERE s.user_id = $1
+      AND s.ballot_id IS NOT NULL
+    ORDER BY s.created_at ASC
+    LIMIT 1
+    `,
+    [userId]
+  )
+  return result.rows[0] ?? null
+}
+
+/** Bind an unbound ballot vote to a user (first login after anonymous cast). */
+export async function bindBallotVoteToUser(
+  ballotId: string,
+  userId: string
+): Promise<SupportRow | null> {
+  const owned = await fetchSupportByUserId(userId)
+  if (owned) return owned
+
+  await query(
+    `UPDATE worldcup_supports
+     SET user_id = $1
+     WHERE ballot_id = $2
+       AND user_id IS NULL
+       AND ballot_id IS NOT NULL`,
+    [userId, ballotId]
+  )
+  return fetchSupportByUserId(userId)
+}
+
+export function alreadyVotedPayload(
+  row: SupportRow,
+  ballotId: string | null,
+  message = 'You already cast your support. Registered votes cannot be changed.'
+) {
+  return {
+    error: message,
+    code: 'ALREADY_VOTED' as const,
+    ballot_id: ballotId || row.ballot_id,
+    support: mapSupportRow(row),
+    placed: placementFromLocation({
+      countryCode: row.location_country_code,
+      country: row.location_country,
+      state: row.location_state,
+      lat: row.location_lat,
+      lng: row.location_lng,
+    }),
+  }
+}
+
+/**
+ * Vote tallies only count ballot-backed rows (one immutable vote per ballot).
+ * Extra wall posts share the same team but use ballot_id NULL so they do not inflate votes.
+ */
+const VOTE_ROW_SQL = `ballot_id IS NOT NULL`
+
 export async function getGlobalStats() {
   const result = await query<{ team_id: string; votes: number }>(
     `SELECT team_id, COUNT(*)::int AS votes
      FROM worldcup_supports
+     WHERE ${VOTE_ROW_SQL}
      GROUP BY team_id`
   )
 
@@ -380,7 +472,8 @@ export async function fetchWorldCupGlobeRegions(): Promise<WorldCupGlobeRegion[]
       COUNT(*) FILTER (WHERE team_id = 'spain')::int AS spain_count,
       COUNT(*) FILTER (WHERE team_id = 'argentina')::int AS argentina_count
     FROM worldcup_supports
-    WHERE contribute_to_globe = true
+    WHERE ${VOTE_ROW_SQL}
+      AND contribute_to_globe = true
       AND location_lat IS NOT NULL
       AND location_lng IS NOT NULL
       AND location_country_code IS NOT NULL
@@ -456,7 +549,8 @@ export async function fetchRegionTally(regionKey: string) {
     `
     SELECT team_id, COUNT(*)::int AS votes
     FROM worldcup_supports
-    WHERE contribute_to_globe = true
+    WHERE ${VOTE_ROW_SQL}
+      AND contribute_to_globe = true
       AND location_country_code = $1
       AND ${stateClause}
     GROUP BY team_id

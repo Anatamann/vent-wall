@@ -8,12 +8,13 @@
 **Teams**: **Spain** vs **Argentina** (fixed binary choice)  
 **Purpose**: Build a **very similar** product surface to **Vent Wall** + **Vent Globe**, but instead of mood tags users declare **which finalist they support**.
 
-**Document pair (both required)**
+**Document set**
 
 | Doc | Owns |
 |-----|------|
 | **This file** | Product flows, data, anti-spam, API, acceptance |
 | [`worldcup-finals-2026-ui-color-guide.md`](./worldcup-finals-2026-ui-color-guide.md) | **Visual only** — colors, glass shell, chips, scoreboard, markers, modal, a11y |
+| [`WORLDCUP_SESSION_HANDOFF.md`](./WORLDCUP_SESSION_HANDOFF.md) | Session resume: branch, what shipped, run checklist, next work |
 
 **UI fidelity rule**: Implement chrome like Vent Wall/Globe (**~90% shared shell**). Team identity is **~10%** (chips, bars, markers, vote CTAs) per the color guide. Do **not** invent a sports-broadcast theme. Prefer existing tokens: `#070b14` void, glass panels/cards, Inter, sky accents for neutral chrome, Spain/Argentina tokens only for team surfaces.
 
@@ -44,30 +45,37 @@ Same interaction model as Home (`ViewSwitcher`):
 2. **Support Globe** (default on desktop ≥1024px, optional)  
    3D globe (same `react-globe.gl` stack) showing **regional leading team** emoticons / colors. Clicking a **region marker** opens a **vote tally popup** (not the full vent list by default — see §5).
 
-Optional third entry: deep links  
-- `/worldcup` or `/finals-2026`  
-- `?view=wall|globe`  
+Deep links (route **`/worldcup` only** — no `/finals-2026` alias required):
+
+- `/worldcup`
+- `?view=wall|globe`
 - `?team=spain|argentina`
+- `?support=spain|argentina` (resume wall-post modal after auth)
 
 ### 1.2 Core user journey
 
 ```
-Land on Support Wall / Globe
+Land on Support Wall / Globe  (/worldcup)
         │
         ├─ Browse posts (read-only, public)
         ├─ Filter by Spain | Argentina | All  (chip UI like mood tags)
         │
-        └─ Tap Spain or Argentina to **vote / support**
+        ├─ Tap Spain / Argentina **vote pills** (bare vote — no login)
+        │        │
+        │        ├─ Create/read wc_ballot_id (cookie + localStorage + X-WC-Ballot-Id)
+        │        ├─ Cast immutable team vote (POST /supports/vote)
+        │        └─ Optional geo → Support Globe marker
+        │
+        └─ “Post on Wall” / support with text or GIF
                  │
-                 ├─ Not logged in → redirect to /auth?next=… (return to post flow)
-                 └─ Logged in → open Support Post modal
+                 ├─ Not logged in → /auth?next=/worldcup?…
+                 └─ Logged in → Support Post modal
                           │
-                          ├─ Team pre-selected (Spain or Argentina)
-                          ├─ Optional text thought (0–500 chars, same vent rules)
-                          ├─ Optional GIF (Klipy, same as vents)
+                          ├─ Team = existing ballot team (immutable) or chosen team
+                          ├─ Text and/or GIF required to publish
                           ├─ ISP location disclaimer + contribute-to-globe toggle
-                          └─ Submit → counts as **one support vote** for that team
-                                      + optional wall post for that team
+                          └─ Submit → wall card; attaches to ballot if present
+                                      (no second vote; team cannot change)
 ```
 
 ### 1.3 Visual language for teams (mood-tag analogue)
@@ -120,8 +128,9 @@ Distinguish **Filter** vs **Support** in UI (color guide §4.3): filter chips ch
 
 #### Bare vote (no login)
 
-- User picks Spain or Argentina → cast **anonymous** support immediately (or confirm sheet with globe toggle only).  
-- Tracked by long-lived **`ballot_id` cookie** (httpOnly); **immutable** once cast (cannot change team).  
+- User picks Spain or Argentina via **vote pills** → cast **anonymous** support immediately.  
+- Identity: HttpOnly cookie **`wc_ballot_id`** + **localStorage** + request header **`X-WC-Ballot-Id`** (header needed through Vite proxy).  
+- **Immutable** once cast (cannot change team); re-vote same team may **backfill geo** if lat/lng were null.  
 - Optional: “Show on Support Globe” default **on** when geo succeeds.  
 - Does **not** create a wall card by itself.
 
@@ -194,9 +203,9 @@ Prefer **either emoji or GIF per comment** for simple cards (both allowed if one
 
 Prefer a **dedicated** support entity so World Cup data does not pollute mood vents. Alternative: reuse `vents` with a special tag namespace — **not recommended**.
 
-**IDs**: UUID primary keys internally; **short URL-safe slugs** in public paths (no ugly long UUIDs in URLs). Team keys stay pretty: `spain` | `argentina`.
+**IDs**: Short public ids (same style as Vent Wall — e.g. `s…` supports, `k…` comments) plus **pretty slugs** in paths (no UUID URLs). Team keys: `spain` | `argentina`.
 
-### 3.1 Tables (sketch)
+### 3.1 Tables (as shipped — `db/migrations/020_worldcup_supports.sql`)
 
 ```sql
 -- Fixed teams (seed) — colors from UI color guide
@@ -204,47 +213,39 @@ CREATE TABLE worldcup_teams (
   id TEXT PRIMARY KEY,           -- 'spain' | 'argentina'
   name TEXT NOT NULL,
   emoji TEXT NOT NULL,
-  color TEXT NOT NULL            -- e.g. #C60B1E / #74ACDF
+  color TEXT NOT NULL            -- #C60B1E / #74ACDF
 );
 
 -- One ballot / support (+ optional wall body when published)
 CREATE TABLE worldcup_supports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug TEXT UNIQUE NOT NULL,     -- short public id, e.g. s_k7m2n9xq
-  ballot_id TEXT UNIQUE,         -- anonymous cookie ballot; unique when set
-  user_id UUID REFERENCES users(id),  -- null until wall post / claimed
+  id VARCHAR(12) PRIMARY KEY,    -- short public id (s…)
+  ballot_id TEXT UNIQUE,         -- anonymous ballot; unique when set
+  user_id VARCHAR(12) REFERENCES users(id),  -- null until wall post
   team_id TEXT NOT NULL REFERENCES worldcup_teams(id),
   content TEXT CHECK (content IS NULL OR char_length(content) <= 500),
-  asset_id UUID,                 -- optional GIF for wall
+  asset_id VARCHAR(12),          -- optional GIF for wall
   is_wall_post BOOLEAN NOT NULL DEFAULT false,
   contribute_to_globe BOOLEAN NOT NULL DEFAULT true,
-  location_country_code TEXT,
-  location_country TEXT,
-  location_state TEXT,
-  location_city TEXT,
-  location_lat DOUBLE PRECISION,
-  location_lng DOUBLE PRECISION,
-  ip_hash TEXT,                  -- HMAC(ip); never raw IP long-term
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  location_* …,                  -- ISP geo fields
+  ip_hash TEXT,                  -- HMAC(ip); never raw IP
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  wall_published_at TIMESTAMPTZ
   -- data kept forever; team_id immutable after insert
 );
 
 CREATE TABLE worldcup_support_comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug TEXT UNIQUE,              -- optional short id
-  support_id UUID NOT NULL REFERENCES worldcup_supports(id),
-  user_id UUID NOT NULL REFERENCES users(id),
+  id VARCHAR(12) PRIMARY KEY,    -- short public id (k…)
+  support_id VARCHAR(12) NOT NULL REFERENCES worldcup_supports(id),
+  user_id VARCHAR(12) NOT NULL REFERENCES users(id),
   emoji TEXT,                    -- emoji-only when set
-  asset_id UUID,                 -- GIF when set
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CHECK (emoji IS NOT NULL OR asset_id IS NOT NULL)
+  asset_id VARCHAR(12),          -- GIF when set
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_wc_supports_team_created ON worldcup_supports (team_id, created_at DESC);
-CREATE INDEX idx_wc_supports_globe ON worldcup_supports (created_at DESC)
-  WHERE contribute_to_globe = true AND location_lat IS NOT NULL;
-CREATE INDEX idx_wc_comments_support_user ON worldcup_support_comments (support_id, user_id);
+-- Indexes: wall feed, globe geo, ip_hash abuse caps, user
 ```
+
+Pretty post URLs use a **slug** field/resolution in the API layer as implemented; ids stay short public form.
 
 ### 3.2 Vote definition
 
@@ -405,36 +406,36 @@ Updates from `GET /stats` (poll every 30–60s or on focus).
 - [x] Teams fixed: Spain, Argentina  
 - [x] Anonymous immutable vote + auth for wall/comments  
 - [x] All-time tallies; no 24h data expiry  
-- [x] Route `/worldcup`; UI per color guide  
-- [x] Comments: flat emoji/GIF; 3 / 50 quotas; UUID + slug
+- [x] Route `/worldcup` only; UI per color guide  
+- [x] Comments: flat emoji/GIF; 3 non-OP / 50 OP; short public ids
 
-### Phase 1 — Backend
-- Migrations + seed teams  
-- POST/GET supports + auth + rate limits + one-vote-per-user  
-- Globe aggregate + region tally endpoint  
-- Reuse IP geolocation + hash helpers  
+### Phase 1 — Backend — **shipped** (`feature/worldcup-finals-2026`)
+- [x] Migration `020_worldcup_supports.sql` + seed teams  
+- [x] `/api/worldcup` routes; ballot cookie/header; IP-hash caps  
+- [x] Globe aggregate + region tally; geo private-IP fallback (dev)  
+- [x] Seed script `seed-worldcup.ts` (5 posts + real city geo)
 
-### Phase 2 — Support Wall UI
-- Page shell + view switcher  
-- Team filter chips  
-- Feed + cards  
-- Support post modal + auth redirect  
+### Phase 2 — Support Wall UI — **shipped**
+- [x] `/worldcup` page + view switcher + Finals nav  
+- [x] Team chips, scoreboard, vote pills, feed/cards  
+- [x] Support post modal + auth `?next=`  
+- [x] Flat emoji/GIF comments on wall posts  
 
-### Phase 3 — Support Globe UI
-- Globe markers by leading team  
-- Click marker → tally popup (Spain vs Argentina counts)  
-- Optional: list posts from region  
+### Phase 3 — Support Globe UI — **shipped**
+- [x] SupportGlobe markers by leading team  
+- [x] Click marker → tally popup (Spain vs Argentina, all-time)  
 
-### Phase 4 — Hardening
-- Admin void/hide  
-- Voting closed flag  
-- Seed demo geo data (like `globe-3day.sql`)  
-- Load test aggregates  
+### Phase 4 — Hardening (remaining)
+- [ ] Admin void/hide  
+- [ ] More globe seed density for “reliable” regions (≥5)  
+- [ ] Captcha only if abuse appears  
+- [ ] Production env: `CLIENT_ORIGIN`, secrets, CORS  
 
-### Phase 5 — Polish
-- Share image / OG “I support Spain on Vent Wall Finals”  
-- Accessibility, i18n if needed  
-- Post-match freeze + final results banner  
+### Phase 5 — Polish (remaining)
+- [ ] UI i18n packs (en/es)  
+- [ ] Share / OG cards  
+- [ ] Post-match freeze banner via `WORLDCUP_VOTING_CLOSED`  
+- [ ] Merge PR → `master` when ready 
 
 ---
 
@@ -455,9 +456,11 @@ Updates from `GET /stats` (poll every 30–60s or on focus).
 | 11 | Early regions | Leader + early styling if &lt; 5 |
 | 12 | Voting closed | **`WORLDCUP_VOTING_CLOSED`** |
 | 13 | Comments | Flat; **emoji/GIF only**; 3 non-OP / 50 OP per post |
-| 14 | Public IDs | **UUID** internal + **short slug** in URLs |
+| 14 | Public IDs | Short public ids (`s…` supports, `k…` comments) + **pretty slug URLs** (not UUID paths) |
 | 15 | UI / colors | **`worldcup-finals-2026-ui-color-guide.md`** (Vent-family shell) |
-| 16 | i18n | Browser default locale packs; UGC original language |
+| 16 | i18n | Browser default locale packs; UGC original language (direction; not fully built) |
+| 17 | Platforms simultaneous | **Yes** — `/` Vent + `/worldcup` share app/DB; separate WC tables |
+| 18 | Ballot multi-signal | Cookie + localStorage + **`X-WC-Ballot-Id`** header |
 
 ---
 
@@ -471,9 +474,10 @@ Updates from `GET /stats` (poll every 30–60s or on focus).
 6. Globe leading markers; click → **tally popup** both teams (all-time).  
 7. IP-hash + rate limits bound new ballots; no raw IP; server-side geo only.  
 8. Comments: flat, emoji/GIF only, quotas 3 / 50; public read.  
-9. URLs use short **slugs** (e.g. `/worldcup/post/:slug`).  
-10. UI language follows browser among supported packs; does not break mood product on `/`.  
+9. URLs use short **slugs** / public ids (e.g. `/worldcup/post/:slug`) — not raw UUIDs.  
+10. Mood product on `/` unchanged; both platforms can run together.  
 11. `WORLDCUP_VOTING_CLOSED` freezes votes.  
+12. Ballot survives cookie quirks via localStorage + `X-WC-Ballot-Id`. 
 
 ---
 
