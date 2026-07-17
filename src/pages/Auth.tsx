@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useUsernameAvailability } from '../hooks/useUsernameAvailability'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { MessageSquare, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
+
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return '/'
+  return raw
+}
 
 export default function Auth() {
   const { isAuthenticated, signIn, signUp, loading } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const nextPath = useMemo(() => safeNextPath(searchParams.get('next')), [searchParams])
   const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -29,7 +36,7 @@ export default function Auth() {
   })
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />
+    return <Navigate to={nextPath} replace />
   }
 
   const usernameInputClass = (() => {
@@ -82,14 +89,14 @@ export default function Auth() {
         }
 
         await signUp(formData.username, formData.password, formData.email)
-        navigate('/', { replace: true })
+        navigate(nextPath, { replace: true })
       } else {
         if (!formData.username.trim()) {
           throw new Error('Username is required')
         }
 
         await signIn(formData.username, formData.password)
-        navigate('/', { replace: true })
+        navigate(nextPath, { replace: true })
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An error occurred'

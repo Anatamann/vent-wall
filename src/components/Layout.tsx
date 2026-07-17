@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, MessageSquare, User, LogOut, LogIn } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Trophy, User, LogOut, LogIn } from 'lucide-react'
 import FloatingFeedbackButton from './FloatingFeedbackButton'
 import FeedbackModal from './FeedbackModal'
 
@@ -55,6 +55,18 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Navigation — icon-only on mobile */}
             <nav className="flex items-center gap-0.5 sm:gap-2 shrink-0">
+              <Link
+                to="/worldcup"
+                title="World Cup 2026"
+                className={`flex items-center gap-1 px-2 py-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                  location.pathname.startsWith('/worldcup')
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Trophy className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Finals</span>
+              </Link>
               {isAuthenticated ? (
                 <>
                   {user?.is_admin && (

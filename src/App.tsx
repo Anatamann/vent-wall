@@ -7,6 +7,8 @@ import Profile from './pages/Profile'
 import PostDetail from './pages/PostDetail'
 import Auth from './pages/Auth'
 import AdminDashboard from './pages/AdminDashboard'
+import WorldCup from './pages/WorldCup'
+import WorldCupPost from './pages/WorldCupPost'
 import LoadingSpinner from './components/LoadingSpinner'
 
 function App() {
@@ -25,6 +27,8 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/worldcup" element={<WorldCup />} />
+          <Route path="/worldcup/post/:slug" element={<WorldCupPost />} />
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />

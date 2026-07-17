@@ -11,6 +11,7 @@
     "seed": "tsx src/scripts/seed.ts",
     "seed:globe": "tsx src/scripts/seed-globe.ts",
     "seed:globe:3day": "tsx src/scripts/seed-globe-3day.ts",
+    "seed:worldcup": "tsx src/scripts/seed-worldcup.ts",
     "db:setup": "npm run migrate && npm run seed && npm run seed:globe"
   },
   "dependencies": {

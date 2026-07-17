@@ -15,10 +15,35 @@ import type {
   UserFeedback,
   Vent,
   VentComment,
+  WorldCupRegionTally,
+  WorldCupGlobeRegion,
+  WorldCupStats,
+  WorldCupSupport,
+  WorldCupSupportComment,
+  WorldCupTeam,
+  WorldCupTeamId,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 const TOKEN_KEY = 'ventwall_token'
+const WC_BALLOT_KEY = 'wc_ballot_id'
+
+export function getWorldCupBallotId(): string | null {
+  try {
+    return localStorage.getItem(WC_BALLOT_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setWorldCupBallotId(ballotId: string | null) {
+  try {
+    if (ballotId) localStorage.setItem(WC_BALLOT_KEY, ballotId)
+    else localStorage.removeItem(WC_BALLOT_KEY)
+  } catch {
+    /* ignore */
+  }
+}
 
 type AuthListener = (user: AuthUser | null) => void
 const authListeners = new Set<AuthListener>()
@@ -96,9 +121,16 @@ async function request<T>(
     }
   }
 
+  // Persist anonymous World Cup ballot across reloads (cookie + localStorage).
+  if (path.startsWith('/worldcup')) {
+    const ballotId = getWorldCupBallotId()
+    if (ballotId) headers.set('X-WC-Ballot-Id', ballotId)
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    credentials: 'include',
   })
 
   if (response.status === 204) {
@@ -107,14 +139,21 @@ async function request<T>(
 
   const data = await parseResponseBody(response)
 
+  if (path.startsWith('/worldcup') && typeof data.ballot_id === 'string') {
+    setWorldCupBallotId(data.ballot_id)
+  }
+
   if (!response.ok) {
     if (response.status === 401) {
       handleUnauthorized(tokenUsed)
     }
-    throw new ApiError(
+    // Attach payload so callers can read support/placed on 409.
+    const err = new ApiError(
       typeof data.error === 'string' ? data.error : 'Request failed',
       response.status
-    )
+    ) as ApiError & { payload?: Record<string, unknown> }
+    err.payload = data
+    throw err
   }
 
   return data as T
@@ -437,6 +476,109 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(payload),
       })
+    },
+  },
+
+  worldcup: {
+    teams(): Promise<WorldCupTeam[]> {
+      return request('/worldcup/teams', {}, false)
+    },
+
+    stats(): Promise<WorldCupStats> {
+      return request('/worldcup/stats', {}, false)
+    },
+
+    me(): Promise<{
+      support: WorldCupSupport | null
+      ballot_id: string | null
+      voting_closed: boolean
+    }> {
+      return request('/worldcup/me', {}, false)
+    },
+
+    listSupports(params: {
+      team?: WorldCupTeamId | 'all' | string
+      offset?: number
+      limit?: number
+    } = {}): Promise<WorldCupSupport[]> {
+      const search = new URLSearchParams()
+      if (params.team && params.team !== 'all') search.set('team', params.team)
+      if (params.offset !== undefined) search.set('offset', String(params.offset))
+      if (params.limit !== undefined) search.set('limit', String(params.limit))
+      const q = search.toString()
+      return request(`/worldcup/supports${q ? `?${q}` : ''}`, {}, false)
+    },
+
+    getSupport(id: string): Promise<WorldCupSupport> {
+      return request(`/worldcup/supports/${id}`, {}, false)
+    },
+
+    vote(payload: {
+      team_id: WorldCupTeamId
+      contribute_to_globe?: boolean
+    }): Promise<{
+      support: WorldCupSupport
+      ballot_id?: string
+      placed?: {
+        regionKey: string | null
+        label: string
+        countryCode: string
+        state: string | null
+        lat: number
+        lng: number
+      } | null
+    }> {
+      return request(
+        '/worldcup/supports/vote',
+        { method: 'POST', body: JSON.stringify(payload) },
+        false
+      )
+    },
+
+    publish(payload: {
+      team_id?: WorldCupTeamId
+      content?: string
+      gif_id?: string
+      contribute_to_globe?: boolean
+    }): Promise<WorldCupSupport> {
+      return request('/worldcup/supports', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    },
+
+    listComments(id: string): Promise<{
+      comments: WorldCupSupportComment[]
+      comments_open: boolean
+    }> {
+      return request(`/worldcup/supports/${id}/comments`, {}, false)
+    },
+
+    addComment(
+      id: string,
+      payload: CommentPayload
+    ): Promise<{ comment: WorldCupSupportComment }> {
+      return request(`/worldcup/supports/${id}/comments`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    },
+
+    globeData(): Promise<{
+      window: string
+      minVentsForReliable: number
+      regions: WorldCupGlobeRegion[]
+      activeCount: number
+    }> {
+      return request('/worldcup/globe/data', {}, false)
+    },
+
+    regionTally(regionKey: string): Promise<WorldCupRegionTally> {
+      return request(
+        `/worldcup/globe/regions/${encodeURIComponent(regionKey)}`,
+        {},
+        false
+      )
     },
   },
 }

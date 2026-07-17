@@ -29,7 +29,23 @@ export default {
           calm: '#10b981',
           frustrated: '#f97316',
           grateful: '#ec4899',
-        }
+        },
+        worldcup: {
+          spain: {
+            DEFAULT: '#C60B1E',
+            deep: '#8B0000',
+            gold: '#FFC400',
+            soft: 'rgba(198, 11, 30, 0.18)',
+            text: '#fecaca',
+          },
+          argentina: {
+            DEFAULT: '#74ACDF',
+            deep: '#3D7AB5',
+            sun: '#F6B40E',
+            soft: 'rgba(116, 172, 223, 0.20)',
+            text: '#e0f2fe',
+          },
+        },
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

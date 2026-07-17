@@ -47,13 +47,8 @@ function cleanText(value: unknown): string | null {
   return trimmed
 }
 
-/**
- * Resolve approximate ISP location from request IP.
- * Fail-open: returns null fields on any error so post creation never breaks.
- * Raw IP is not returned or persisted.
- */
-export async function resolveLocationFromRequest(req: Request): Promise<VentLocation> {
-  const empty: VentLocation = {
+function emptyLocation(): VentLocation {
+  return {
     countryCode: null,
     country: null,
     state: null,
@@ -61,55 +56,96 @@ export async function resolveLocationFromRequest(req: Request): Promise<VentLoca
     lat: null,
     lng: null,
   }
+}
 
+function locationFromEnvFallback(): VentLocation | null {
+  const lat = Number(process.env.DEV_GEO_LAT)
+  const lng = Number(process.env.DEV_GEO_LNG)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return {
+    countryCode: (process.env.DEV_GEO_COUNTRY_CODE || 'US').toUpperCase(),
+    country: process.env.DEV_GEO_COUNTRY || 'United States',
+    state: process.env.DEV_GEO_STATE || null,
+    city: process.env.DEV_GEO_CITY || null,
+    lat: roundCoord(lat),
+    lng: roundCoord(lng),
+  }
+}
+
+function parseGeoJson(data: Record<string, unknown>): VentLocation {
+  if (data.error) return emptyLocation()
+
+  const latRaw = typeof data.latitude === 'number' ? data.latitude : Number(data.latitude)
+  const lngRaw = typeof data.longitude === 'number' ? data.longitude : Number(data.longitude)
+  const lat = Number.isFinite(latRaw) ? roundCoord(latRaw) : null
+  const lng = Number.isFinite(lngRaw) ? roundCoord(lngRaw) : null
+
+  return {
+    countryCode: cleanText(data.country_code)?.toUpperCase() ?? null,
+    country: cleanText(data.country_name) ?? cleanText(data.country),
+    state: cleanText(data.region) ?? cleanText(data.region_code),
+    city: cleanText(data.city),
+    lat,
+    lng,
+  }
+}
+
+async function fetchGeoUrl(url: string): Promise<VentLocation> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), GEO_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json', 'User-Agent': 'vent-wall/1.0' },
+    })
+    if (!response.ok) return emptyLocation()
+    const data = (await response.json()) as Record<string, unknown>
+    return parseGeoJson(data)
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * Resolve approximate ISP location from request IP.
+ * Fail-open: returns null fields on any error so post creation never breaks.
+ * Raw IP is not returned or persisted.
+ *
+ * Localhost / private IPs cannot be geolocated from the TCP peer address. In
+ * development we fall back to DEV_GEO_* env, then a public-egress IP lookup so
+ * Support Globe markers still appear when testing on 127.0.0.1.
+ */
+export async function resolveLocationFromRequest(req: Request): Promise<VentLocation> {
   try {
     const ip = getClientIp(req)
-    if (!ip || isPrivateOrLocalIp(ip)) {
-      return empty
-    }
-
     const base = (process.env.IP_GEO_API_URL || 'https://ipapi.co').replace(/\/$/, '')
-    const url = `${base}/${encodeURIComponent(ip)}/json/`
 
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), GEO_TIMEOUT_MS)
-
-    try {
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: { Accept: 'application/json', 'User-Agent': 'vent-wall/1.0' },
-      })
-
-      if (!response.ok) {
-        return empty
+    if (!ip || isPrivateOrLocalIp(ip)) {
+      const fromEnv = locationFromEnvFallback()
+      if (fromEnv?.lat != null && fromEnv?.lng != null) {
+        return fromEnv
       }
 
-      const data = (await response.json()) as Record<string, unknown>
-      if (data.error) {
-        return empty
+      // Dev / explicit opt-in: geolocate the machine's public egress IP.
+      const allowPublicFallback =
+        process.env.NODE_ENV !== 'production' ||
+        process.env.GEO_FALLBACK_PUBLIC_ON_PRIVATE === 'true'
+      if (allowPublicFallback) {
+        const publicGeo = await fetchGeoUrl(`${base}/json/`)
+        if (publicGeo.lat != null && publicGeo.lng != null) {
+          return publicGeo
+        }
       }
 
-      const latRaw = typeof data.latitude === 'number' ? data.latitude : Number(data.latitude)
-      const lngRaw = typeof data.longitude === 'number' ? data.longitude : Number(data.longitude)
-      const lat = Number.isFinite(latRaw) ? roundCoord(latRaw) : null
-      const lng = Number.isFinite(lngRaw) ? roundCoord(lngRaw) : null
-
-      return {
-        countryCode: cleanText(data.country_code)?.toUpperCase() ?? null,
-        country: cleanText(data.country_name) ?? cleanText(data.country),
-        state: cleanText(data.region) ?? cleanText(data.region_code),
-        city: cleanText(data.city),
-        lat,
-        lng,
-      }
-    } finally {
-      clearTimeout(timer)
+      return emptyLocation()
     }
+
+    return await fetchGeoUrl(`${base}/${encodeURIComponent(ip)}/json/`)
   } catch (err) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn('Geolocation lookup failed (non-fatal):', err instanceof Error ? err.message : err)
     }
-    return empty
+    return emptyLocation()
   }
 }
 

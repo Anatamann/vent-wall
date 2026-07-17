@@ -143,25 +143,30 @@
   opacity: 0.9;
 }
 
-/* Shared dark shell (Vent Wall + Vent Globe + Profile + Admin) */
+/* Shared dark shell (Vent Wall + Vent Globe + Profile + Admin + World Cup) */
 body.wall-view-active,
 body.profile-view-active,
 body.admin-view-active,
-body.globe-view-active {
+body.globe-view-active,
+body.worldcup-wall-active,
+body.worldcup-globe-active {
   background-color: #070b14 !important;
   color: #e2e8f0;
 }
 
 body.wall-view-active .globe-shell-root,
 body.profile-view-active .globe-shell-root,
-body.admin-view-active .globe-shell-root {
+body.admin-view-active .globe-shell-root,
+body.worldcup-wall-active .globe-shell-root {
   background: radial-gradient(ellipse 80% 50% at 50% 0%, #12203a 0%, #070b14 55%);
   min-height: 100dvh;
 }
 
 body.wall-view-active .globe-shell-header,
 body.profile-view-active .globe-shell-header,
-body.admin-view-active .globe-shell-header {
+body.admin-view-active .globe-shell-header,
+body.worldcup-wall-active .globe-shell-header,
+body.worldcup-globe-active .globe-shell-header {
   background-color: rgba(15, 23, 42, 0.92) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
   box-shadow: none !important;
@@ -173,7 +178,11 @@ body.wall-view-active .globe-shell-header .dark\:text-gray-100,
 body.profile-view-active .globe-shell-header .text-gray-900,
 body.profile-view-active .globe-shell-header .dark\:text-gray-100,
 body.admin-view-active .globe-shell-header .text-gray-900,
-body.admin-view-active .globe-shell-header .dark\:text-gray-100 {
+body.admin-view-active .globe-shell-header .dark\:text-gray-100,
+body.worldcup-wall-active .globe-shell-header .text-gray-900,
+body.worldcup-wall-active .globe-shell-header .dark\:text-gray-100,
+body.worldcup-globe-active .globe-shell-header .text-gray-900,
+body.worldcup-globe-active .globe-shell-header .dark\:text-gray-100 {
   color: #f1f5f9 !important;
 }
 
@@ -182,21 +191,50 @@ body.wall-view-active .globe-shell-header .dark\:text-gray-300,
 body.profile-view-active .globe-shell-header .text-gray-700,
 body.profile-view-active .globe-shell-header .dark\:text-gray-300,
 body.admin-view-active .globe-shell-header .text-gray-700,
-body.admin-view-active .globe-shell-header .dark\:text-gray-300 {
+body.admin-view-active .globe-shell-header .dark\:text-gray-300,
+body.worldcup-wall-active .globe-shell-header .text-gray-700,
+body.worldcup-wall-active .globe-shell-header .dark\:text-gray-300,
+body.worldcup-globe-active .globe-shell-header .text-gray-700,
+body.worldcup-globe-active .globe-shell-header .dark\:text-gray-300 {
   color: #cbd5e1 !important;
 }
 
 body.wall-view-active .globe-shell-footer,
 body.profile-view-active .globe-shell-footer,
-body.admin-view-active .globe-shell-footer {
+body.admin-view-active .globe-shell-footer,
+body.worldcup-wall-active .globe-shell-footer,
+body.worldcup-globe-active .globe-shell-footer {
   background-color: rgba(15, 23, 42, 0.9) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 body.wall-view-active .globe-shell-footer p,
 body.profile-view-active .globe-shell-footer p,
-body.admin-view-active .globe-shell-footer p {
+body.admin-view-active .globe-shell-footer p,
+body.worldcup-wall-active .globe-shell-footer p,
+body.worldcup-globe-active .globe-shell-footer p {
   color: #94a3b8 !important;
+}
+
+body.worldcup-globe-active {
+  overflow: hidden !important;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+:root {
+  --wc-spain: #c60b1e;
+  --wc-spain-deep: #8b0000;
+  --wc-spain-gold: #ffc400;
+  --wc-spain-soft: rgba(198, 11, 30, 0.18);
+  --wc-spain-glow: rgba(198, 11, 30, 0.35);
+  --wc-spain-text: #fecaca;
+  --wc-argentina: #74acdf;
+  --wc-argentina-deep: #3d7ab5;
+  --wc-argentina-sun: #f6b40e;
+  --wc-argentina-soft: rgba(116, 172, 223, 0.2);
+  --wc-argentina-glow: rgba(116, 172, 223, 0.4);
+  --wc-argentina-text: #e0f2fe;
 }
 
 /* Active nav chips on dark shell */

@@ -203,3 +203,74 @@ export interface AdminOverview {
   top_tags: Array<{ name: string; emoji: string; color: string; count: number }>
   top_emojis: Array<{ emoji: string; count: number }>
 }
+
+/** World Cup Finals 2026 */
+export type WorldCupTeamId = 'spain' | 'argentina'
+
+export interface WorldCupTeam {
+  id: WorldCupTeamId | string
+  name: string
+  emoji: string
+  color: string
+}
+
+export interface WorldCupSupport {
+  id: string
+  slug: string
+  team_id: string
+  team: WorldCupTeam
+  content: string
+  is_wall_post: boolean
+  contribute_to_globe: boolean
+  created_at: string
+  wall_published_at: string | null
+  comment_count: number
+  user: Pick<User, 'id' | 'username' | 'status' | 'avatar_url'> | null
+  asset: CommentAsset | null
+}
+
+export interface WorldCupSupportComment {
+  id: string
+  support_id: string
+  user_id: string
+  comment_type: 'emoji' | 'gif'
+  emoji: string | null
+  created_at: string
+  user?: Pick<User, 'id' | 'username' | 'status'>
+  asset?: CommentAsset
+}
+
+export interface WorldCupStats {
+  total: number
+  voting_closed: boolean
+  teams: Array<WorldCupTeam & { votes: number; percent: number }>
+}
+
+export interface WorldCupGlobeRegion {
+  regionKey: string
+  state: string | null
+  country: string | null
+  countryCode: string | null
+  lat: number
+  lng: number
+  leadingTeamId: string | null
+  leadingEmoji: string
+  isTied: boolean
+  isReliable: boolean
+  isEmpty: boolean
+  total: number
+  spainCount: number
+  argentinaCount: number
+}
+
+export interface WorldCupRegionTally {
+  regionKey: string
+  label: string
+  window: string
+  total: number
+  teams: Array<WorldCupTeam & { votes: number; percent: number }>
+  leadingTeamId: string | null
+  isTied: boolean
+  isReliable: boolean
+  minForReliable: number
+}

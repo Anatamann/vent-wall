@@ -24,6 +24,7 @@
     "db:seed": "npm run seed --prefix server",
     "db:seed:globe": "npm run seed:globe --prefix server",
     "db:seed:globe:3day": "npm run seed:globe:3day --prefix server",
+    "db:seed:worldcup": "npm run seed:worldcup --prefix server",
     "db:setup": "npm run db:up && npm run db:migrate && npm run db:seed && npm run db:seed:globe"
   },
   "dependencies": {
