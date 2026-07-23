@@ -6,6 +6,9 @@ import type { User, Vent } from '../lib/types'
 interface UserStats {
   totalVents: number
   totalReactions: number
+  totalReactionsReceived?: number
+  totalReactionsGiven?: number
+  totalCommentsGiven?: number
   joinedDate: string
   lastActiveDate: string
   postsThisMonth: number

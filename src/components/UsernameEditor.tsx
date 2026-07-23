@@ -182,8 +182,7 @@ export default function UsernameEditor({
             <h2 className="text-lg sm:text-xl font-semibold text-slate-50 mb-1">Profile Settings</h2>
 
             <p className="text-xs sm:text-sm text-slate-400 mb-3">
-              Pick a GIF from Klipy for your profile picture. Cached locally after selection — max
-              2MB.
+              Pick a GIF from Klipy for your profile picture — max 2MB.
             </p>
 
             {isEditing ? (

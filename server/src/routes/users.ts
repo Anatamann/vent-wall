@@ -84,15 +84,33 @@ router.get('/me/profile', requireAuth, async (req, res) => {
     const allVents = allVentsResult.rows
 
     const ventIds = allVents.map((v) => v.id)
-    let totalReactions = 0
 
+    // Reactions *received* on this user's vents (others reacting to you)
+    let totalReactionsReceived = 0
     if (ventIds.length > 0) {
       const reactionsResult = await query(
         'SELECT COUNT(*)::int AS count FROM reactions WHERE vent_id = ANY($1::text[])',
         [ventIds]
       )
-      totalReactions = reactionsResult.rows[0]?.count || 0
+      totalReactionsReceived = reactionsResult.rows[0]?.count || 0
     }
+
+    // Reactions *given* by this user on any vents (interacting with others)
+    const givenResult = await query<{ count: number }>(
+      'SELECT COUNT(*)::int AS count FROM reactions WHERE user_id = $1',
+      [userId]
+    )
+    const totalReactionsGiven = givenResult.rows[0]?.count || 0
+
+    // Comments given (emoji/GIF engagement on others' vents + own)
+    const commentsGivenResult = await query<{ count: number }>(
+      'SELECT COUNT(*)::int AS count FROM vent_comments WHERE user_id = $1',
+      [userId]
+    )
+    const totalCommentsGiven = commentsGivenResult.rows[0]?.count || 0
+
+    // Back-compat: totalReactions = received (historical field name)
+    const totalReactions = totalReactionsReceived
 
     const thisMonth = new Date()
     thisMonth.setDate(1)
@@ -101,6 +119,19 @@ router.get('/me/profile', requireAuth, async (req, res) => {
     const postsThisMonth = allVents.filter(
       (vent) => new Date(vent.created_at) >= thisMonth
     ).length
+
+    // Last active = latest of post, reaction, or comment — not only last_post_date
+    const lastActiveResult = await query<{ last_active: string | null }>(
+      `SELECT GREATEST(
+         $2::timestamptz,
+         COALESCE((SELECT MAX(created_at) FROM vents WHERE user_id = $1), $2::timestamptz),
+         COALESCE((SELECT MAX(created_at) FROM reactions WHERE user_id = $1), $2::timestamptz),
+         COALESCE((SELECT MAX(created_at) FROM vent_comments WHERE user_id = $1), $2::timestamptz)
+       ) AS last_active`,
+      [userId, profile.created_at]
+    )
+    const lastActiveDate =
+      lastActiveResult.rows[0]?.last_active || profile.last_post_date || profile.created_at
 
     const userVents = await fetchVentsWithRelations({
       userId,
@@ -111,13 +142,18 @@ router.get('/me/profile', requireAuth, async (req, res) => {
 
     const stats = {
       totalVents: allVents.length,
+      /** Reactions received on your vents */
       totalReactions,
+      totalReactionsReceived,
+      /** Reactions you placed on vents (including others') */
+      totalReactionsGiven,
+      totalCommentsGiven,
       joinedDate: profile.created_at,
-      lastActiveDate: profile.last_post_date || profile.created_at,
+      lastActiveDate,
       postsThisMonth,
       averageReactionsPerVent:
         allVents.length > 0
-          ? Math.round((totalReactions / allVents.length) * 10) / 10
+          ? Math.round((totalReactionsReceived / allVents.length) * 10) / 10
           : 0,
     }
 

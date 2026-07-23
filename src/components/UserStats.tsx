@@ -1,10 +1,14 @@
 import { formatDistanceToNow } from 'date-fns'
-import { Calendar, MessageSquare, Heart, TrendingUp, Clock } from 'lucide-react'
+import { Calendar, MessageSquare, Heart, TrendingUp, Clock, Sparkles } from 'lucide-react'
 
 interface UserStatsProps {
   stats: {
     totalVents: number
+    /** @deprecated prefer totalReactionsReceived — kept for older API payloads */
     totalReactions: number
+    totalReactionsReceived?: number
+    totalReactionsGiven?: number
+    totalCommentsGiven?: number
     joinedDate: string
     lastActiveDate: string
     postsThisMonth: number
@@ -16,42 +20,60 @@ export default function UserStats({ stats }: UserStatsProps) {
   const joinedAgo = formatDistanceToNow(new Date(stats.joinedDate), { addSuffix: true })
   const lastActiveAgo = formatDistanceToNow(new Date(stats.lastActiveDate), { addSuffix: true })
 
+  const received = stats.totalReactionsReceived ?? stats.totalReactions
+  const given = stats.totalReactionsGiven ?? 0
+  const commentsGiven = stats.totalCommentsGiven ?? 0
+
   const statItems = [
     {
       icon: MessageSquare,
-      label: 'Total Vents',
+      label: 'Your vents',
       value: stats.totalVents,
       color: 'text-sky-400',
       bgColor: 'bg-sky-500/15 border-sky-400/20',
     },
     {
       icon: Heart,
-      label: 'Total Reactions',
-      value: stats.totalReactions,
+      label: 'Reactions received',
+      value: received,
       color: 'text-rose-400',
       bgColor: 'bg-rose-500/15 border-rose-400/20',
     },
     {
+      icon: Sparkles,
+      label: 'Reactions given',
+      value: given,
+      color: 'text-amber-300',
+      bgColor: 'bg-amber-500/15 border-amber-400/20',
+    },
+    {
       icon: TrendingUp,
-      label: 'Avg. Reactions',
+      label: 'Avg. on your vents',
       value: stats.averageReactionsPerVent,
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/15 border-emerald-400/20',
     },
     {
       icon: Calendar,
-      label: 'This Month',
+      label: 'Posts this month',
       value: stats.postsThisMonth,
       color: 'text-violet-400',
       bgColor: 'bg-violet-500/15 border-violet-400/20',
+    },
+    {
+      icon: MessageSquare,
+      label: 'Comments given',
+      value: commentsGiven,
+      color: 'text-cyan-300',
+      bgColor: 'bg-cyan-500/15 border-cyan-400/20',
     },
   ]
 
   return (
     <div className="glass-panel p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-semibold text-slate-50 mb-5">Your Statistics</h2>
+      <h2 className="text-base sm:text-lg font-semibold text-slate-50 mb-2">Your Statistics</h2>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5">
         {statItems.map((item, index) => (
           <div
             key={index}
