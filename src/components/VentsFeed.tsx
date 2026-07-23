@@ -1,5 +1,4 @@
-import VentCard from './VentCard'
-import InfiniteScroll from './InfiniteScroll'
+import ScrollingVentsColumns from './ScrollingVentsColumns'
 import { MessageSquare } from 'lucide-react'
 import type { Vent } from '../lib/types'
 
@@ -126,17 +125,27 @@ export default function VentsFeed({
     )
   }
 
+  // Auto-scrolling multi-column wall (desktop 3-col / mobile 1-col slow).
+  // Still load more in the background when sparse; not a classic page scroll feed.
   return (
-    <InfiniteScroll
-      hasMore={hasMore}
-      loading={loadingMore}
-      onLoadMore={onLoadMore || (() => {})}
-    >
-      <div className={GRID_CLASS}>
-        {vents.map((vent) => (
-          <VentCard key={vent.id} vent={vent} />
-        ))}
-      </div>
-    </InfiniteScroll>
+    <div className="w-full space-y-3">
+      <ScrollingVentsColumns
+        vents={vents}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        onLoadMore={onLoadMore}
+      />
+      {loadingMore && (
+        <p className="text-center text-[11px] text-slate-500">Loading more vents…</p>
+      )}
+      {/* Keep InfiniteScroll off the marquee viewport — optional footer trigger */}
+      {hasMore && onLoadMore && !loadingMore && vents.length > 0 && (
+        <div className="flex justify-center pt-1">
+          <button type="button" onClick={onLoadMore} className="btn-glass text-xs">
+            Load more vents
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

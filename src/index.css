@@ -99,6 +99,76 @@
   }
 }
 
+/* ── Vent Wall auto-scroll marquee (bottom → top) ─────────────────────── */
+.vent-marquee-wall {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 4%,
+    #000 96%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 4%,
+    #000 96%,
+    transparent 100%
+  );
+}
+
+.vent-marquee-column {
+  /* Isolation so hover pause is per column */
+  isolation: isolate;
+}
+
+/* Stronger frosted glass on marquee cards (readability over moving backdrop) */
+.vent-marquee-card .glass-card {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.vent-marquee-card .glass-card:hover {
+  background: rgba(30, 41, 59, 0.55);
+  border-color: rgba(125, 211, 252, 0.28);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 24px rgba(56, 189, 248, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.vent-marquee-track {
+  animation-name: vent-marquee-up;
+  animation-duration: var(--marquee-duration, 50s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  /* Start mid-phase so columns don’t share the same “row” */
+  animation-delay: 0s;
+  transform: translate3d(0, var(--marquee-start, 0px), 0);
+}
+
+@keyframes vent-marquee-up {
+  /* From slightly below / offset → up by half track (duplicated content) */
+  0% {
+    transform: translate3d(0, var(--marquee-start, 0px), 0);
+  }
+  100% {
+    transform: translate3d(0, calc(-50% + var(--marquee-start, 0px)), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vent-marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* Vent Globe markers — circular discs, no glow */
 .vent-globe-marker {
   --marker-scale: 1;
